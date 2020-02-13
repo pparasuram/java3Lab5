@@ -40,8 +40,16 @@ public class USGSController {
                 case 6:
                     queryDataBase();
                     break;
+                case 7:
+                    readCSVFile();
+                    break;
             }
         }
+    }
+
+    private void readCSVFile() {
+        ReadCSVFile readCSVFile = new ReadCSVFile();
+        readCSVFile.readCSVFile();
     }
 
     private void deleteTable() {

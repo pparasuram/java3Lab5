@@ -1,7 +1,7 @@
 package cscc.edu;
 
 public class USGSView {
-    static public Integer MenuMaxNumber = 6;
+    static public Integer MenuMaxNumber = 7;
 
     public USGSView() {
     }
@@ -16,6 +16,7 @@ public class USGSView {
         System.out.println("4. Delete Table");
         System.out.println("5. Load Database from CSV");
         System.out.println("6. Query Database");
+        System.out.println("7. Read CSV file");
         System.out.println("0. Exit Program");
         System.out.println("===========================================");
     }
