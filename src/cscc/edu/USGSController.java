@@ -49,7 +49,7 @@ public class USGSController {
 
     private void readCSVFile() {
         ReadCSVFile readCSVFile = new ReadCSVFile();
-        readCSVFile.readCSVFile();
+        readCSVFile.readCSVFileAndUpdateDatabase();
     }
 
     private void deleteTable() {

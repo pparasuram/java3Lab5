@@ -8,31 +8,51 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 public class ReadCSVFile {
-    static private String CSV_FILE_NAME ="2007-2017_large_quake.csv";
-    public USGSCSVData readCSVFile() {
+    static private String CSV_FILE_NAME = "2007-2017_large_quake.csv";
+
+    public void readCSVFileAndUpdateDatabase() {
+        USGSCSVData usgscsvData = new USGSCSVData();
+        int j = 0;
         try {
-            BufferedReader br = new BufferedReader( new FileReader(CSV_FILE_NAME) );
+            BufferedReader br = new BufferedReader(new FileReader(CSV_FILE_NAME));
             // this variable points to the buffered line
             String line;
-// Keep buffering the lines and print it.
-            int i = 0;
+            // Keep buffering the lines and print it.
+            boolean titleLine = true;
             String[] lineData = new String[25];
             while ((line = br.readLine()) != null) {
-// line has the data
-                lineData = line.split(",");
-                /*
-                System.out.println(lineData);
-                i++;
-                if (i >= 11)
-                    break;
-                 */
-                USGSCSVData usgscsvData = new USGSCSVData();
+                int i = 0;
+                if (titleLine) {
+                    titleLine = !titleLine;
+                    continue;
+                }
+                // we have a single line of data in line
+                lineData = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+/*
+                We use reflections to access class fields as an iterator and iterate through fields and
+                assign them string values that were delimited with commas in the csv, we also took care to
+                ensure we kept strings in quotations with commas from not being split
+                At the end of below code usgscsvData fields have the data in the csv
+ */
                 Class<?> c = usgscsvData.getClass();
-                Field f [] = c.getDeclaredFields();
-                for (Field field: f) {
+                Field f[] = c.getDeclaredFields();
+                for (Field field : f) {
                     System.out.println(field);
-                    System.out.println(field.getType());
-                    System.out.println(field.getAnnotatedType());
+//                    System.out.println(field.getType());
+//                    System.out.println(field.getAnnotatedType());
+                    field.setAccessible(true);
+                    try {
+                        if (lineData[i].contains("\"")) {
+                            String tempStr = lineData[i].replaceAll("\"", "");
+                            lineData[i] = tempStr;
+                        }
+                        field.set(usgscsvData, lineData[i++]);
+                        if (i >= lineData.length) {
+                            break;
+                        }
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
 
                   /*  switch (field.getType()) {
                         case "java.lang.String" :
@@ -40,14 +60,14 @@ public class ReadCSVFile {
                     }
 
                    */
-                }
+                } // end of iterating through fields
                 //
-            }
+                System.out.println("processed line: " + j++ + " place: " + usgscsvData.place);
+            } // end of while reading csv file is not empty
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
     }
 }
