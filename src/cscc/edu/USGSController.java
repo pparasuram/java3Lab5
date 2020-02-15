@@ -53,6 +53,14 @@ public class USGSController {
     }
 
     private void deleteTable() {
+        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
+        if (databaseUSGSDB.deleteTable(USGSDatabase.getDbName())) {
+            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
+                    " Table " + USGSDatabase.getTableName() +"deleted successfully!");
+        } else {
+            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
+                    " Table " + USGSDatabase.getTableName() + "could not be deleted! Sorry!");
+        }
     }
 
     private void createTable() {
@@ -78,6 +86,7 @@ public class USGSController {
     }
 
     private void loadDataBase() {
+        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
         if (databaseUSGSDB.loadAllRecordsInDB(USGSDatabase.getDbName())) {
             usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + "loaded successfully!");
         } else {

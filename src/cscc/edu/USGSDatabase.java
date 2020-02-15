@@ -100,6 +100,20 @@ public class USGSDatabase {
         }
     }
 
+    public boolean deleteTable(String db_name) {
+        String query = "DROP TABLE ";
+        try {
+            query = query + TABLE_NAME;
+            statement = connection.createStatement();
+            statement.executeUpdate(query);
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e.getCause());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public boolean deleteAllRecordsInDB(String db_name) {
         String query = "DROP DATABASE ";
         try {
@@ -176,7 +190,15 @@ public class USGSDatabase {
         }
         return null;
     }
+    public void addRowToDBTable(USGSCSVData usgscsvData) {
+        // USGSCSVData usgscsvData has the data create a row in table and fill it with data
+    }
     public boolean loadAllRecordsInDB(String dbName) {
+        // create object of class ReadCSVFile
+        // execute its loop readCSVFileAndUpdateDatabase
+        // that loop will call method above to add records to table in a batch mode
+        ReadCSVFile readCSVFile = new ReadCSVFile();
+        readCSVFile.readCSVFileAndUpdateDatabase();
         return false;
     }
 }

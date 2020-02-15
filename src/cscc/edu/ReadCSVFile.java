@@ -53,15 +53,9 @@ public class ReadCSVFile {
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     }
-
-                  /*  switch (field.getType()) {
-                        case "java.lang.String" :
-                            break;
-                    }
-
-                   */
                 } // end of iterating through fields
-                //
+                // now USGSCSVData usgscsvData is filled call a database update method
+
                 System.out.println("processed line: " + j++ + " place: " + usgscsvData.place);
             } // end of while reading csv file is not empty
         } catch (FileNotFoundException e) {
