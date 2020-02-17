@@ -53,13 +53,14 @@ public class USGSController {
     }
 
     private void readCSVFile() {
-        ReadCSVFilex readCSVFile = new ReadCSVFilex();
+        usgsView.displayMessage("Just simply reads CSV file and scrolls on display, NO Database functions are done!");
+        ReadCSVFile readCSVFile = new ReadCSVFile();
         readCSVFile.readCSVFileAndPrint();
     }
-
     private void deleteTable() {
+        usgsView.displayMessage("Trying to drop table, please wait!");
         databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
-        if (databaseUSGSDB.deleteTable(USGSDatabase.getDbName())) {
+        if (databaseUSGSDB.deleteTable()) {
             usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
                     " Table " + USGSDatabase.getTableName() +" deleted successfully!");
         } else {
@@ -69,8 +70,9 @@ public class USGSController {
     }
 
     private void createTable() {
+        usgsView.displayMessage("Trying to create Table, please wait!");
         databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
-        if (databaseUSGSDB.createTable(USGSDatabase.getDbName())) {
+        if (databaseUSGSDB.createTable()) {
             usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
                                             " Table " + USGSDatabase.getTableName() +" created successfully!");
         } else {
@@ -81,6 +83,7 @@ public class USGSController {
     }
 
     private void deleteAllRecordsInDataBase() {
+        usgsView.displayMessage("Trying to drop database, this works only when started new, it take a few minutes,please wait!");
         if (databaseMasterDB.deleteAllRecordsInDB(USGSDatabase.getDbName())) {
             usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " deleted successfully!");
         } else {
@@ -89,9 +92,11 @@ public class USGSController {
     }
 
     private void loadDataBase() {
+        usgsView.displayMessage("Trying to load database from CSV, it take a few minutes, please wait!");
+        ReadCSVFile readCSVFile = new ReadCSVFile();
         databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
         // if (databaseUSGSDB.loadAllRecordsInDB(databaseUSGSDB)) {
-        if (databaseUSGSDB.readCSVFileAndUpdateDatabase(databaseUSGSDB)) {
+        if (readCSVFile.readCSVFileAndUpdateDatabase(databaseUSGSDB)) {
             usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " loaded successfully!");
         } else {
             usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " could not be loaded! Sorry!");
@@ -159,5 +164,4 @@ public class USGSController {
         }
         return 0;
     }
-
 }
