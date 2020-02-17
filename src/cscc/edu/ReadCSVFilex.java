@@ -5,12 +5,11 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 
-public class ReadCSVFile {
+public class ReadCSVFilex {
     static private String CSV_FILE_NAME = "2007-2017_large_quake.csv";
 
-    public void readCSVFileAndUpdateDatabase() {
+    public void readCSVFileAndUpdateDatabase(USGSDatabase usgsDatabase) {
         USGSCSVData usgscsvData = new USGSCSVData();
         int j = 0;
         try {
@@ -23,7 +22,7 @@ public class ReadCSVFile {
             while ((line = br.readLine()) != null) {
                 int i = 0;
                 if (titleLine) {
-                    titleLine = !titleLine;
+                    titleLine = false;
                     continue;
                 }
                 // we have a single line of data in line
@@ -35,9 +34,9 @@ public class ReadCSVFile {
                 At the end of below code usgscsvData fields have the data in the csv
  */
                 Class<?> c = usgscsvData.getClass();
-                Field f[] = c.getDeclaredFields();
+                Field[] f = c.getDeclaredFields();
                 for (Field field : f) {
-                    System.out.println(field);
+//                    System.out.println(field);
 //                    System.out.println(field.getType());
 //                    System.out.println(field.getAnnotatedType());
                     field.setAccessible(true);
@@ -55,12 +54,43 @@ public class ReadCSVFile {
                     }
                 } // end of iterating through fields
                 // now USGSCSVData usgscsvData is filled call a database update method
-
+                usgsDatabase.addRowToDBTable(usgscsvData, usgsDatabase);
                 System.out.println("processed line: " + j++ + " place: " + usgscsvData.place);
             } // end of while reading csv file is not empty
+            // a few lines may need to be committed
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void readCSVFileAndPrint() {
+        int j = 0;
+        try {
+            BufferedReader br = null;
+                br = new BufferedReader(new FileReader(CSV_FILE_NAME));
+                // this variable points to the buffered line
+                String line;
+                // Keep buffering the lines and print it.
+                boolean titleLine = true;
+                String[] lineData = new String[25];
+                while ((line = br.readLine()) != null) {
+                    int i = 0;
+                    if (titleLine) {
+                        titleLine = false;
+                        continue;
+                    }
+                    // we have a single line of data in line
+                    lineData = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1);
+                    System.out.println(line);
+                    System.out.println(lineData);
+                }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
