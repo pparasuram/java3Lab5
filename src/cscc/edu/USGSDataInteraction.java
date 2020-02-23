@@ -7,14 +7,14 @@ import java.util.Scanner;
 
 import static java.lang.Integer.parseInt;
 
-public class USGSController {
+public class USGSDataInteraction {
     private static Scanner input = new Scanner(System.in);
     USGSView usgsView;
     String connectionStringMasterDB = "jdbc:sqlserver://localhost:1433;databaseName=master;user=sa;password=reallyStrongPwd123";
     String connectionStringUSGSDB = "jdbc:sqlserver://localhost:1433;databaseName="+ USGSDatabase.getDbName()+";user=sa;password=reallyStrongPwd123";
     USGSDatabase databaseMasterDB = new USGSDatabase(connectionStringMasterDB);
     USGSDatabase databaseUSGSDB;
-    public USGSController() {
+    public USGSDataInteraction() {
         this.usgsView = new USGSView();
     }
 
