@@ -15,10 +15,10 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 public class USGSDatabase {
-    static private Integer BATCH_COUNT = 100;
-    static private String DB_NAME = "usgs";
+    static private final Integer BATCH_COUNT = 100;
+    static private final String DB_NAME = "usgs";
     static public final String TABLE_NAME = "earthquake_data";
-    static private String CREATE_TABLE_STRING = "CREATE TABLE " + /* DB_NAME + "."+*/ TABLE_NAME +
+    static private final String CREATE_TABLE_STRING = "CREATE TABLE " + /* DB_NAME + "."+*/ TABLE_NAME +
             " (time datetime, " +
             " latitude real, " +
             " longitude real, " +
@@ -41,7 +41,7 @@ public class USGSDatabase {
             " status varchar(10), " +
             " locationSource varchar(10), " +
             " magSource varchar(10))";
-    public static final String SQL_INSERT = "INSERT INTO " + TABLE_NAME +
+    private static final String SQL_INSERT = "INSERT INTO " + TABLE_NAME +
             " (time, " +
             "latitude, " +
             "longitude, " +
@@ -65,9 +65,26 @@ public class USGSDatabase {
             "locationSource, " +
             "magSource) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" ;
-    static String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    static private String CSV_FILE_NAME = "2007-2017_large_quake.csv";
-
+    static private final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    static private final String CSV_FILE_NAME = "2007-2017_large_quake.csv";
+    static private final String SQL_LATITUDE = " (latitude = ? or ? is null) ";
+    static private final String SQL_LONGITUDE = " (longitude = ? or ? is null) ";
+    static private final String SQL_DEPTH = " (depth = ? or ? is null) ";
+    static private final String SQL_MAG = " (depth = ? or ? is null) ";
+    static private final String SQL_AND_SEARCH = "SELECT * FROM " +
+                                                            TABLE_NAME +
+                                                            " WHERE " +
+                                                            SQL_LATITUDE + "AND" +
+                                                            SQL_LONGITUDE + "AND" +
+                                                            SQL_DEPTH + "AND" +
+                                                            SQL_MAG;
+    static private final String SQL_OR_SEARCH = "SELECT * FROM " +
+            TABLE_NAME +
+            " WHERE " +
+            SQL_LATITUDE + "OR" +
+            SQL_LONGITUDE + "OR" +
+            SQL_DEPTH + "OR" +
+            SQL_MAG;
     static private int count = 0;
     private String connectionUrl;
     private Connection connection;
@@ -258,6 +275,27 @@ public class USGSDatabase {
             return(returnValue = false);
         }
         return returnValue;
+    }
+    public ResultSet executePreparedSql(String sql) {
+        System.out.print("Connecting to SQL Server ... ");
+        try {
+            // preparedStatement.executeQuery(sql);
+            // sql = "SELECT * FROM my_temp_db";
+            // "SELECT * FROM INFORMATION_SCHEMA.TABLES"
+            // sql = ("SELECT * FROM INFORMATION_SCHEMA.TABLES");
+            ResultSet rs = preparedStatement.executeQuery(sql);
+            System.out.println("Done.");
+            return rs;
+            // preparedStatement.addBatch("");
+        }
+        catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getCause());
+        }
+        catch (Exception e) {
+            System.out.println();
+            e.printStackTrace();
+        }
+        return null;
     }
     public ResultSet executeSingleSql(String sql) {
         System.out.print("Connecting to SQL Server ... ");
