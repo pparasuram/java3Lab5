@@ -2,17 +2,13 @@ package cscc.edu;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.reflect.Field;
 import java.sql.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class USGSDatabase {
     static private final Integer BATCH_COUNT = 100;
@@ -41,6 +37,21 @@ public class USGSDatabase {
             " status varchar(10), " +
             " locationSource varchar(10), " +
             " magSource varchar(10))";
+    public static final String SELECT_STRING = "SELECT * FROM " + TABLE_NAME + " ";
+
+    public static String getDeleteString() {
+        return DELETE_STRING;
+    }
+
+    public static final String DELETE_STRING = "DELETE FROM " + TABLE_NAME + " ";
+    public static String getCountString() {
+        return COUNT_STRING;
+    }
+
+    public static final String COUNT_STRING = "SELECT count(*) AS [rowcount]  FROM " + TABLE_NAME + " ";
+    public static String getSqlInsert() {
+        return SQL_INSERT;
+    }
     private static final String SQL_INSERT = "INSERT INTO " + TABLE_NAME +
             " (time, " +
             "latitude, " +
@@ -66,25 +77,6 @@ public class USGSDatabase {
             "magSource) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" ;
     static private final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    static private final String CSV_FILE_NAME = "2007-2017_large_quake.csv";
-    static private final String SQL_LATITUDE = " (latitude = ? or ? is null) ";
-    static private final String SQL_LONGITUDE = " (longitude = ? or ? is null) ";
-    static private final String SQL_DEPTH = " (depth = ? or ? is null) ";
-    static private final String SQL_MAG = " (depth = ? or ? is null) ";
-    static private final String SQL_AND_SEARCH = "SELECT * FROM " +
-                                                            TABLE_NAME +
-                                                            " WHERE " +
-                                                            SQL_LATITUDE + "AND" +
-                                                            SQL_LONGITUDE + "AND" +
-                                                            SQL_DEPTH + "AND" +
-                                                            SQL_MAG;
-    static private final String SQL_OR_SEARCH = "SELECT * FROM " +
-            TABLE_NAME +
-            " WHERE " +
-            SQL_LATITUDE + "OR" +
-            SQL_LONGITUDE + "OR" +
-            SQL_DEPTH + "OR" +
-            SQL_MAG;
     static private int count = 0;
     private String connectionUrl;
     private Connection connection;
@@ -97,6 +89,11 @@ public class USGSDatabase {
     public static void setCount(int count) {
         USGSDatabase.count = count;
     }
+
+    public static String getSelectString() {
+        return SELECT_STRING;
+    }
+
     public Connection getConnection() {
         return connection;
     }
@@ -116,7 +113,7 @@ public class USGSDatabase {
     public void setStatement(Statement statement) {
         this.statement = statement;
     }
-
+    private USGSView usgsView = new USGSView();
     public static String getDbName() {
         return DB_NAME;
     }
@@ -213,8 +210,8 @@ public class USGSDatabase {
         try {
             connection.setAutoCommit(false); // default true
 
-            java.util.Date tempUtilDate = simpleDateFormat.parse(usgscsvData.time);
-            java.sql.Timestamp tempSQLDate = new java.sql.Timestamp(tempUtilDate.getTime());
+            Date tempUtilDate = simpleDateFormat.parse(usgscsvData.time);
+            Timestamp tempSQLDate = new Timestamp(tempUtilDate.getTime());
             usgsDatabase.preparedStatement.setTimestamp(1, tempSQLDate);
             if (usgscsvData.latitude == null || usgscsvData.latitude == "" || usgscsvData.latitude.isEmpty())
                 usgscsvData.latitude = "0";
@@ -242,7 +239,7 @@ public class USGSDatabase {
             usgsDatabase.preparedStatement.setString(11, usgscsvData.net);
             usgsDatabase.preparedStatement.setString(12, usgscsvData.id);
             tempUtilDate = simpleDateFormat.parse(usgscsvData.updated);
-            tempSQLDate = new java.sql.Timestamp(tempUtilDate.getTime());
+            tempSQLDate = new Timestamp(tempUtilDate.getTime());
             usgsDatabase.preparedStatement.setTimestamp(13, tempSQLDate);
             usgsDatabase.preparedStatement.setString(14, usgscsvData.place);
             usgsDatabase.preparedStatement.setString(15, usgscsvData.type);
@@ -276,27 +273,6 @@ public class USGSDatabase {
         }
         return returnValue;
     }
-    public ResultSet executePreparedSql(String sql) {
-        System.out.print("Connecting to SQL Server ... ");
-        try {
-            // preparedStatement.executeQuery(sql);
-            // sql = "SELECT * FROM my_temp_db";
-            // "SELECT * FROM INFORMATION_SCHEMA.TABLES"
-            // sql = ("SELECT * FROM INFORMATION_SCHEMA.TABLES");
-            ResultSet rs = preparedStatement.executeQuery(sql);
-            System.out.println("Done.");
-            return rs;
-            // preparedStatement.addBatch("");
-        }
-        catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getCause());
-        }
-        catch (Exception e) {
-            System.out.println();
-            e.printStackTrace();
-        }
-        return null;
-    }
     public ResultSet executeSingleSql(String sql) {
         System.out.print("Connecting to SQL Server ... ");
         try {
@@ -320,4 +296,101 @@ public class USGSDatabase {
         }
         return null;
     }
+    public ResultSet searchDatabase (StringBuilder queryString) {
+        /*
+        String query = "select * from " + USGSDatabase.TABLE_NAME  + " where " +
+                                " latitude > ? and latitude < ? and" +
+                                " longitude > ? and longitude < ? and" +
+                                " depth > ? and depth < ? and" +
+                                " mag > ? and mag < ?";
+        // String query = "select count(*) from " + USGSDatabase.TABLE_NAME;
+        // luckily for us queryString is ready to send to sql
+         */
+        // queryString.append(" LIMIT ? OFFSET ? ");
+        ResultSet rs = null;
+        try {
+            // this.setStatement(this.getConnection().createStatement());
+            this.setPreparedStatement(this.getConnection().prepareStatement(queryString.toString()));
+            System.out.println("qs is: " + queryString.toString());
+            if (!queryString.toString().toUpperCase().contains("DELETE"))
+                rs = this.getPreparedStatement().executeQuery();
+            else {
+                this.getPreparedStatement().execute();
+                usgsView.displayMessage("Successful Delete !!!");
+            }
+        } catch (SQLServerException e) {
+
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return rs;
+    }
+    public ResultSet searchDatabaseWithLimitAndOffset (StringBuilder queryString, Integer limit, Integer offset) {
+        /*
+        String query = "select * from " + USGSDatabase.TABLE_NAME  + " where " +
+                                " latitude > ? and latitude < ? and" +
+                                " longitude > ? and longitude < ? and" +
+                                " depth > ? and depth < ? and" +
+                                " mag > ? and mag < ?";
+        // String query = "select count(*) from " + USGSDatabase.TABLE_NAME;
+        // luckily for us queryString is ready to send to sql
+         */
+        ResultSet rs = null;
+        try {
+            // this.setStatement(this.getConnection().createStatement());
+            this.preparedStatement = this.getConnection().prepareStatement(queryString.toString());
+            System.out.println("qs is: " + queryString.toString());
+            this.preparedStatement.setInt(1, offset);
+            this.preparedStatement.setInt(2, limit);
+            rs = this.preparedStatement.executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return rs;
+    }
+    public ResultSet countSearchedDatabase(StringBuilder queryCountString) {
+        /*
+        String query = "select * from " + USGSDatabase.TABLE_NAME  + " where " +
+                                " latitude > ? and latitude < ? and" +
+                                " longitude > ? and longitude < ? and" +
+                                " depth > ? and depth < ? and" +
+                                " mag > ? and mag < ?";
+        // String query = "select count(*) from " + USGSDatabase.TABLE_NAME;
+        // luckily for us queryString is ready to send to sql
+         */
+        // queryString.append(" LIMIT ? OFFSET ? ");
+        ResultSet rs = null;
+        try {
+            // this.setStatement(this.getConnection().createStatement());
+            usgsView.displayMessage("String is: " + queryCountString.toString());
+            this.setPreparedStatement(this.getConnection().prepareStatement(queryCountString.toString()));
+            rs = this.getPreparedStatement().executeQuery();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return rs;
+    }
+    public ResultSet executePreparedSql(String sql) {
+        System.out.print("Connecting to SQL Server ... ");
+        try {
+            // preparedStatement.executeQuery(sql);
+            // sql = "SELECT * FROM my_temp_db";
+            // "SELECT * FROM INFORMATION_SCHEMA.TABLES"
+            // sql = ("SELECT * FROM INFORMATION_SCHEMA.TABLES");
+            ResultSet rs = preparedStatement.executeQuery(sql);
+            System.out.println("Done.");
+            return rs;
+            // preparedStatement.addBatch("");
+        }
+        catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getCause());
+        }
+        catch (Exception e) {
+            System.out.println();
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

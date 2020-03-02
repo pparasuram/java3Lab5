@@ -4,9 +4,9 @@ public class DoubleLowHigh<A, B> {
     A low = null;
     B high = null;
 
-    DoubleLowHigh(A first, B second) {
-        this.low = first;
-        this.high = second;
+    DoubleLowHigh(A low, B high) {
+        this.low = low;
+        this.high = high;
     }
 
     public A getLow() {

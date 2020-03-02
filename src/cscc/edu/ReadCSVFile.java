@@ -24,7 +24,7 @@ public class ReadCSVFile {
                 System.out.println("Table " + USGSDatabase.TABLE_NAME + " exists and has " + rs.getInt(1) + " rows");
                 return false;
             }
-            usgsDatabase.setPreparedStatement(usgsDatabase.getConnection().prepareStatement(USGSDatabase.SQL_INSERT));
+            usgsDatabase.setPreparedStatement(usgsDatabase.getConnection().prepareStatement(USGSDatabase.getSqlInsert()));
             BufferedReader br = new BufferedReader(new FileReader(CSV_FILE_NAME));
             // this variable points to the buffered line
             String line;

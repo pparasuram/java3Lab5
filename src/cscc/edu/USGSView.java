@@ -2,7 +2,7 @@ package cscc.edu;
 
 public class USGSView {
     static public Integer DatabaseCreationMenuMaxNumber = 7;
-    public static Integer MainMenuMaxNumber = 5;
+    public static Integer MainMenuMaxNumber = 6;
 
     public USGSView() {
     }
@@ -10,11 +10,12 @@ public class USGSView {
         System.out.println("!!!!!!!! USGS Database Welcome Screen !!!!!!!!");
         System.out.println("Please enter a choice from the below");
         System.out.println("===============================================================");
-        System.out.println("1. Database Creation and Load Menu" + USGSDatabase.getDbName());
+        System.out.println("1. Database Creation and Load Menu " + USGSDatabase.getDbName());
         System.out.println("2. Select Column(s) to display in " + USGSDatabase.getTableName());
-        System.out.println("3. Perform Search using selected Column(s) in " + USGSDatabase.getDbName());
-        System.out.println("4. Delete Rows based on selected column(s) values in " + USGSDatabase.getTableName());
-        System.out.println("5. Count Rows based on selected column(s) values in " + USGSDatabase.getTableName() + " from CSV");
+        System.out.println("3. Enter selected Column(s) Ranges and then Search " + USGSDatabase.getTableName());
+        System.out.println("4. Search only on earlier selected Columns, and ranges in " + USGSDatabase.getTableName());
+        System.out.println("5. Delete Rows based on selected column(s) values in " + USGSDatabase.getTableName());
+        System.out.println("6. Count Rows based on selected column(s) values in " + USGSDatabase.getTableName());
         System.out.println("0. Exit Program");
         System.out.println("================================================================");
     }
@@ -57,7 +58,7 @@ public class USGSView {
         System.out.println(s);
     }
     public void displayMessageNoLineBreak (String s) {
-        System.out.println(s);
+        System.out.print(s);
     }
     public void displayQueryDataBaseMenu() {
         System.out.println("!!!!!!!! USGS Database Query Screen !!!!!!!!");
