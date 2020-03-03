@@ -9,6 +9,7 @@ import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 
 public class USGSDatabase {
     static private final Integer BATCH_COUNT = 100;
@@ -213,7 +214,7 @@ public class USGSDatabase {
             Date tempUtilDate = simpleDateFormat.parse(usgscsvData.time);
             Timestamp tempSQLDate = new Timestamp(tempUtilDate.getTime());
             usgsDatabase.preparedStatement.setTimestamp(1, tempSQLDate);
-            if (usgscsvData.latitude == null || usgscsvData.latitude == "" || usgscsvData.latitude.isEmpty())
+            if (usgscsvData.latitude == null || Objects.equals(usgscsvData.latitude, "") || usgscsvData.latitude.isEmpty())
                 usgscsvData.latitude = "0";
             usgsDatabase.preparedStatement.setFloat(2, Float.parseFloat(usgscsvData.latitude));
             if (usgscsvData.longitude == null || usgscsvData.longitude == "" || usgscsvData.longitude.isEmpty())
