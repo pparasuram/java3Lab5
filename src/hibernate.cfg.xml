@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 5.3//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-5.4.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <property name="hbm2ddl.auto">update</property>
+        <property name="dialect">org.hibernate.dialect.SQLServerDialect</property>
+        <property name="connection.url">jdbc:sqlserver://localhost:1433</property>
+        <property name="connection.username">sa</property>
+        <property name="connection.password">reallyStrongPwd123</property>
+        <property name="connection.driver_class">com.microsoft.sqlserver.jdbc.SQLServerDriver</property>
+        <!-- <mapping resource="earthquake_data_orm.more.hbm.xml"/> -->
+        <mapping class="cscc.edu.USGSTableData"/>
+    </session-factory>
+</hibernate-configuration>

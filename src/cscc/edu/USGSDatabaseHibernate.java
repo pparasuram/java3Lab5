@@ -1,17 +1,24 @@
 package cscc.edu;
 
 import com.microsoft.sqlserver.jdbc.SQLServerException;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.query.Query;
 
 import java.sql.*;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
-public class USGSDatabase {
+public class USGSDatabaseHibernate {
     static private final Integer BATCH_COUNT = 100;
     static private final String DB_NAME = "usgs";
     static public final String TABLE_NAME = "earthquake_data";
@@ -39,16 +46,13 @@ public class USGSDatabase {
             " locationSource varchar(10), " +
             " magSource varchar(10))";
     public static final String SELECT_STRING = "SELECT * FROM " + TABLE_NAME + " ";
-
     public static String getDeleteString() {
         return DELETE_STRING;
     }
-
     public static final String DELETE_STRING = "DELETE FROM " + TABLE_NAME + " ";
     public static String getCountString() {
         return COUNT_STRING;
     }
-
     public static final String COUNT_STRING = "SELECT count(*) AS [rowcount]  FROM " + TABLE_NAME + " ";
     public static String getSqlInsert() {
         return SQL_INSERT;
@@ -84,21 +88,23 @@ public class USGSDatabase {
     private PreparedStatement preparedStatement;
     private Statement statement;
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_PATTERN);
+    StandardServiceRegistry ssr;
+    Metadata meta;
+    SessionFactory factory;
+    Session session;
+    Transaction transaction;
     public static int getCount() {
         return count;
     }
     public static void setCount(int count) {
-        USGSDatabase.count = count;
+        USGSDatabaseHibernate.count = count;
     }
-
     public static String getSelectString() {
         return SELECT_STRING;
     }
-
     public Connection getConnection() {
         return connection;
     }
-
     public void setConnection(Connection connection) {
         this.connection = connection;
     }
@@ -121,12 +127,24 @@ public class USGSDatabase {
     public static String getTableName() {
         return TABLE_NAME;
     }
-    public USGSDatabase(String connectionUrl) {
+    public USGSDatabaseHibernate(String connectionUrl) {
         this.connectionUrl = connectionUrl;
         connectDatabase();
     }
-
     public void connectDatabase() {
+        //Create typesafe ServiceRegistry object
+        try {
+            ssr = new StandardServiceRegistryBuilder().configure("hibernate.cfg.xml").build();
+            meta = new MetadataSources(ssr).getMetadataBuilder().build();
+            factory = meta.getSessionFactoryBuilder().build();
+            session = factory.openSession();
+
+        } catch (HibernateException e) {
+            System.out.println("sky fell down in Factory, call Prakash: " + e.getMessage());
+            e.printStackTrace();
+        }
+/*
+
         // Load SQL Server JDBC driver and establish connection.
         System.out.println("Connecting to SQL Server ... ");
         try {
@@ -136,6 +154,7 @@ public class USGSDatabase {
         } catch (Exception e) {
             e.printStackTrace();
         }
+*/
     }
     public boolean createDB (String db_name) {
         String query = "CREATE DATABASE ";
@@ -204,76 +223,81 @@ public class USGSDatabase {
         }
     }
 
-    public boolean addRowToDBTable(USGSCSVData usgscsvData, USGSDatabase usgsDatabase) {
+    public boolean addRowToDBTable(USGSCSVData usgscsvData, USGSDatabaseHibernate usgsDatabase) {
         // USGSCSVData usgscsvData has the data create a row in table and fill it with data
         boolean returnValue = true;
         count++;
         try {
-            connection.setAutoCommit(false); // default true
+            // connection.setAutoCommit(false); // default true
+            transaction = session.beginTransaction();
 
-            Date tempUtilDate = simpleDateFormat.parse(usgscsvData.time);
-            Timestamp tempSQLDate = new Timestamp(tempUtilDate.getTime());
-            usgsDatabase.preparedStatement.setTimestamp(1, tempSQLDate);
-            if (usgscsvData.latitude == null || Objects.equals(usgscsvData.latitude, "") || usgscsvData.latitude.isEmpty())
-                usgscsvData.latitude = "0";
-            usgsDatabase.preparedStatement.setFloat(2, Float.parseFloat(usgscsvData.latitude));
-            if (usgscsvData.longitude == null || usgscsvData.longitude == "" || usgscsvData.longitude.isEmpty())
-                usgscsvData.longitude = "0";
-            usgsDatabase.preparedStatement.setFloat(3, Float.parseFloat(usgscsvData.longitude));
-            if (usgscsvData.depth == null || usgscsvData.depth == "" || usgscsvData.depth.isEmpty())
-                usgscsvData.depth = "0";
-            usgsDatabase.preparedStatement.setFloat(4, Float.parseFloat(usgscsvData.depth));
-            if (usgscsvData.mag == null || usgscsvData.mag == "" || usgscsvData.mag.isEmpty())
-                usgscsvData.mag = "0";
-            usgsDatabase.preparedStatement.setFloat(5, Float.parseFloat(usgscsvData.mag));
-            usgsDatabase.preparedStatement.setString(6, usgscsvData.magType);
-            usgsDatabase.preparedStatement.setString(7, usgscsvData.nst);
-            if (usgscsvData.gap == null || usgscsvData.gap == "" || usgscsvData.gap.isEmpty())
-                usgscsvData.gap = "0";
-            usgsDatabase.preparedStatement.setFloat(8, Float.parseFloat(usgscsvData.gap));
-            if (usgscsvData.dmin == null || usgscsvData.dmin == "" || usgscsvData.dmin.isEmpty())
-                usgscsvData.dmin = "0";
-            usgsDatabase.preparedStatement.setFloat(9, Float.parseFloat(usgscsvData.dmin));
-            if (usgscsvData.rms == null || usgscsvData.rms == "" || usgscsvData.rms.isEmpty())
-                usgscsvData.rms = "0";
-            usgsDatabase.preparedStatement.setFloat(10, Float.parseFloat(usgscsvData.rms));
-            usgsDatabase.preparedStatement.setString(11, usgscsvData.net);
-            usgsDatabase.preparedStatement.setString(12, usgscsvData.id);
-            tempUtilDate = simpleDateFormat.parse(usgscsvData.updated);
-            tempSQLDate = new Timestamp(tempUtilDate.getTime());
-            usgsDatabase.preparedStatement.setTimestamp(13, tempSQLDate);
-            usgsDatabase.preparedStatement.setString(14, usgscsvData.place);
-            usgsDatabase.preparedStatement.setString(15, usgscsvData.type);
-            if (usgscsvData.horizontalError == null || usgscsvData.horizontalError == "" || usgscsvData.horizontalError.isEmpty())
-                usgscsvData.horizontalError = "0";
-            usgsDatabase.preparedStatement.setFloat(16, Float.parseFloat(usgscsvData.horizontalError));
-            if (usgscsvData.depthError == null || usgscsvData.depthError == "" || usgscsvData.depthError.isEmpty())
-                usgscsvData.depthError = "0";
-            usgsDatabase.preparedStatement.setFloat(17, Float.parseFloat(usgscsvData.depthError));
-            if (usgscsvData.magError == null || usgscsvData.magError == "" || usgscsvData.magError.isEmpty())
-                usgscsvData.magError = "0";
-            usgsDatabase.preparedStatement.setFloat(18, Float.parseFloat(usgscsvData.magError));
-            usgsDatabase.preparedStatement.setString(19, usgscsvData.magNst);
-            usgsDatabase.preparedStatement.setString(20, usgscsvData.status);
-            usgsDatabase.preparedStatement.setString(21, usgscsvData.locationSource);
-            usgsDatabase.preparedStatement.setString(22, usgscsvData.magSource);
-            usgsDatabase.preparedStatement.addBatch();
+            // new OldSQLInsert(usgscsvData, usgsDatabase).invoke();
+            // linear update
+            Query query = session.createQuery(getInsertQueryString());
+            int rowsAffected = query.executeUpdate();
+            System.out.println("Rows affected: " + rowsAffected);
+/*
             if (count >= BATCH_COUNT) {
                 int[] rows = usgsDatabase.preparedStatement.executeBatch();
                 // System.out.println(Arrays.toString(rows));
                 usgsDatabase.connection.commit();
                 count = 0;
             }
-        } catch (SQLException e) {
-            // e.printStackTrace();
-            System.out.println("SQL Error: " + e.getMessage());
-            return(returnValue = false);
-        } catch (ParseException e) {
+*/
+        transaction.commit();
+        } catch ( Throwable e) {
             e.printStackTrace();
             return(returnValue = false);
         }
         return returnValue;
     }
+    private String getInsertQueryString() {
+        return "insert into USGSTableData(id,\n" +
+                "time,\n" +
+                "latitude,\n" +
+                "longitude,\n" +
+                "depth,\n" +
+                "mag,\n" +
+                "magType,\n" +
+                "nst,\n" +
+                "gap,\n" +
+                "dmin,\n" +
+                "rms,\n" +
+                "net,\n" +
+                "eq_id,\n" +
+                "updated,\n" +
+                "place,\n" +
+                "type,\n" +
+                "horizontalError,\n" +
+                "depthError,\n" +
+                "magError,\n" +
+                "magNst,\n" +
+                "status,\n" +
+                "locationSource,\n" +
+                "magSource)" + " select id, time,\n" +
+                "latitude,\n" +
+                "longitude,\n" +
+                "depth,\n" +
+                "mag,\n" +
+                "magType,\n" +
+                "nst,\n" +
+                "gap,\n" +
+                "dmin,\n" +
+                "rms,\n" +
+                "net,\n" +
+                "eq_id,\n" +
+                "updated,\n" +
+                "place,\n" +
+                "type,\n" +
+                "horizontalError,\n" +
+                "depthError,\n" +
+                "magError,\n" +
+                "magNst,\n" +
+                "status,\n" +
+                "locationSource,\n" +
+                "magSource from usgscsvData";
+    }
+
     public ResultSet executeSingleSql(String sql) {
         System.out.print("Connecting to SQL Server ... ");
         try {
@@ -394,4 +418,104 @@ public class USGSDatabase {
         return null;
     }
 
+    public int getTableRowCountWithHQL() {
+        // USGSCSVData usgscsvData has the data create a row in table and fill it with data
+        int returnValue = -1;
+        // count++;
+        try {
+            // connection.setAutoCommit(false); // default true
+            // transaction = session.beginTransaction();
+
+            // new OldSQLInsert(usgscsvData, usgsDatabase).invoke();
+            // linear update
+           // Query query =
+           //  session.createQuery("select count(*) from USGSTableData)").list().size();
+
+            String hql = "select count(*) from USGSTableData";
+
+            Query query = session.createQuery(hql);
+            List listResult = query.list();
+            Number number = (Number) listResult.get(0);
+            return(number.intValue());
+            // return (int) listResult.get(0);
+
+/*
+            int rowsAffected = query.executeUpdate();
+            System.out.println("Rows affected: " + rowsAffected);
+*/
+/*
+            if (count >= BATCH_COUNT) {
+                int[] rows = usgsDatabase.preparedStatement.executeBatch();
+                // System.out.println(Arrays.toString(rows));
+                usgsDatabase.connection.commit();
+                count = 0;
+            }
+*/
+            // transaction.commit();
+        } catch ( Throwable e) {
+            e.printStackTrace();
+            return(returnValue = -1);
+        }
+    }
+
+    private class OldSQLInsert {
+        private USGSCSVData usgscsvData;
+        private USGSDatabaseHibernate usgsDatabase;
+
+        public OldSQLInsert(USGSCSVData usgscsvData, USGSDatabaseHibernate usgsDatabase) {
+            this.usgscsvData = usgscsvData;
+            this.usgsDatabase = usgsDatabase;
+        }
+
+        public void invoke() throws ParseException, SQLException {
+            Date tempUtilDate = simpleDateFormat.parse(usgscsvData.time);
+            Timestamp tempSQLDate = new Timestamp(tempUtilDate.getTime());
+            usgsDatabase.preparedStatement.setTimestamp(1, tempSQLDate);
+            if (usgscsvData.latitude == null || Objects.equals(usgscsvData.latitude, "") || usgscsvData.latitude.isEmpty())
+                usgscsvData.latitude = "0";
+            usgsDatabase.preparedStatement.setFloat(2, Float.parseFloat(usgscsvData.latitude));
+            if (usgscsvData.longitude == null || usgscsvData.longitude == "" || usgscsvData.longitude.isEmpty())
+                usgscsvData.longitude = "0";
+            usgsDatabase.preparedStatement.setFloat(3, Float.parseFloat(usgscsvData.longitude));
+            if (usgscsvData.depth == null || usgscsvData.depth == "" || usgscsvData.depth.isEmpty())
+                usgscsvData.depth = "0";
+            usgsDatabase.preparedStatement.setFloat(4, Float.parseFloat(usgscsvData.depth));
+            if (usgscsvData.mag == null || usgscsvData.mag == "" || usgscsvData.mag.isEmpty())
+                usgscsvData.mag = "0";
+            usgsDatabase.preparedStatement.setFloat(5, Float.parseFloat(usgscsvData.mag));
+            usgsDatabase.preparedStatement.setString(6, usgscsvData.magType);
+            usgsDatabase.preparedStatement.setString(7, usgscsvData.nst);
+            if (usgscsvData.gap == null || usgscsvData.gap == "" || usgscsvData.gap.isEmpty())
+                usgscsvData.gap = "0";
+            usgsDatabase.preparedStatement.setFloat(8, Float.parseFloat(usgscsvData.gap));
+            if (usgscsvData.dmin == null || usgscsvData.dmin == "" || usgscsvData.dmin.isEmpty())
+                usgscsvData.dmin = "0";
+            usgsDatabase.preparedStatement.setFloat(9, Float.parseFloat(usgscsvData.dmin));
+            if (usgscsvData.rms == null || usgscsvData.rms == "" || usgscsvData.rms.isEmpty())
+                usgscsvData.rms = "0";
+            usgsDatabase.preparedStatement.setFloat(10, Float.parseFloat(usgscsvData.rms));
+            usgsDatabase.preparedStatement.setString(11, usgscsvData.net);
+            usgsDatabase.preparedStatement.setString(12, usgscsvData.eq_id);
+            tempUtilDate = simpleDateFormat.parse(usgscsvData.updated);
+            tempSQLDate = new Timestamp(tempUtilDate.getTime());
+            // usgsDatabase.preparedStatement.setTimestamp(13, tempSQLDate); //
+            usgsDatabase.preparedStatement.setString(13, usgscsvData.updated);
+            usgsDatabase.preparedStatement.setString(14, usgscsvData.place);
+            usgsDatabase.preparedStatement.setString(15, usgscsvData.type);
+            if (usgscsvData.horizontalError == null || usgscsvData.horizontalError == "" || usgscsvData.horizontalError.isEmpty())
+                usgscsvData.horizontalError = "0";
+            usgsDatabase.preparedStatement.setFloat(16, Float.parseFloat(usgscsvData.horizontalError));
+            if (usgscsvData.depthError == null || usgscsvData.depthError == "" || usgscsvData.depthError.isEmpty())
+                usgscsvData.depthError = "0";
+            usgsDatabase.preparedStatement.setFloat(17, Float.parseFloat(usgscsvData.depthError));
+            if (usgscsvData.magError == null || usgscsvData.magError == "" || usgscsvData.magError.isEmpty())
+                usgscsvData.magError = "0";
+            usgsDatabase.preparedStatement.setFloat(18, Float.parseFloat(usgscsvData.magError));
+            usgsDatabase.preparedStatement.setString(19, usgscsvData.magNst);
+            usgsDatabase.preparedStatement.setString(20, usgscsvData.status);
+            usgsDatabase.preparedStatement.setString(21, usgscsvData.locationSource);
+            usgsDatabase.preparedStatement.setString(22, usgscsvData.magSource);
+            usgsDatabase.preparedStatement.addBatch();
+        }
+    }
 }

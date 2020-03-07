@@ -22,9 +22,9 @@ public class USGSDataInteraction {
     private static Scanner input = new Scanner(System.in);
     USGSView usgsView;
     String connectionStringMasterDB = "jdbc:sqlserver://localhost:1433;databaseName=master;user=sa;password=reallyStrongPwd123";
-    String connectionStringUSGSDB = "jdbc:sqlserver://localhost:1433;databaseName="+ USGSDatabase.getDbName()+";user=sa;password=reallyStrongPwd123";
-    USGSDatabase databaseMasterDB = new USGSDatabase(connectionStringMasterDB);
-    USGSDatabase databaseUSGSDB;
+    String connectionStringUSGSDB = "jdbc:sqlserver://localhost:1433;databaseName="+ USGSDatabaseHibernate.getDbName()+";user=sa;password=reallyStrongPwd123";
+    USGSDatabaseHibernate databaseMasterDB = new USGSDatabaseHibernate(connectionStringMasterDB);
+    USGSDatabaseHibernate databaseUSGSDB;
     // we will store user selections in this, the keys can be:
     // "latitude" , "longitude" , "depth" , and "mag"
     private HashMap<String,Character> searchColumns = new HashMap<String,Character>();
@@ -80,9 +80,9 @@ public class USGSDataInteraction {
         // searchColumns has the columns he wants to search on and has filled
         // searchColumnsDoubleValue has the low and high for these 2 columns
         // we need to call the database search with these 2 hashmaps, and formulate the search string
-        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
-        StringBuilder queryString = new StringBuilder (USGSDatabase.getSelectString());
-        StringBuilder queryCountString = new StringBuilder (USGSDatabase.getCountString());
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
+        StringBuilder queryString = new StringBuilder (USGSDatabaseHibernate.getSelectString());
+        StringBuilder queryCountString = new StringBuilder (USGSDatabaseHibernate.getCountString());
         // queryString now has get * from earthquake_data add stuff to it
         // collect user supplied parameters
         Map<String, String> params = new HashMap<String, String>();
@@ -212,8 +212,8 @@ public class USGSDataInteraction {
         // searchColumns has the columns he wants to search on and has filled
         // searchColumnsDoubleValue has the low and high for these 2 columns
         // we need to call the database search with these 2 hashmaps, and formulate the search string
-        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
-        StringBuilder queryCountString = new StringBuilder(USGSDatabase.getCountString());
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
+        StringBuilder queryCountString = new StringBuilder(USGSDatabaseHibernate.getCountString());
         // queryString now has get * from earthquake_data add stuff to it
         // collect user supplied parameters
         Map<String, String> params = new HashMap<String, String>();
@@ -240,9 +240,9 @@ public class USGSDataInteraction {
         // searchColumns has the columns he wants to search on and has filled
         // searchColumnsDoubleValue has the low and high for these 2 columns
         // we need to call the database search with these 2 hashmaps, and formulate the search string
-        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
-        StringBuilder queryString = new StringBuilder (USGSDatabase.getDeleteString());
-        StringBuilder queryCountString = new StringBuilder (USGSDatabase.getCountString());
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
+        StringBuilder queryString = new StringBuilder (USGSDatabaseHibernate.getDeleteString());
+        StringBuilder queryCountString = new StringBuilder (USGSDatabaseHibernate.getCountString());
         // queryString now has get * from earthquake_data add stuff to it
         // collect user supplied parameters
         Map<String, String> params = new HashMap<String, String>();
@@ -397,53 +397,53 @@ public class USGSDataInteraction {
     }
     private void deleteTable() {
         usgsView.displayMessage("Trying to drop table, please wait!");
-        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
         if (databaseUSGSDB.deleteTable()) {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
-                    " Table " + USGSDatabase.getTableName() +" deleted successfully!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
+                    " Table " + USGSDatabaseHibernate.getTableName() +" deleted successfully!");
         } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
-                    " Table " + USGSDatabase.getTableName() + " could not be deleted! Sorry!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
+                    " Table " + USGSDatabaseHibernate.getTableName() + " could not be deleted! Sorry!");
         }
     }
 
     private void createTable() {
         usgsView.displayMessage("Trying to create Table, please wait!");
-        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
         if (databaseUSGSDB.createTable()) {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
-                                            " Table " + USGSDatabase.getTableName() +" created successfully!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
+                                            " Table " + USGSDatabaseHibernate.getTableName() +" created successfully!");
         } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() +
-                    " Table " + USGSDatabase.getTableName() + " could not be created! Sorry!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
+                    " Table " + USGSDatabaseHibernate.getTableName() + " could not be created! Sorry!");
         }
 
     }
 
     private void deleteAllRecordsInDataBase() {
         usgsView.displayMessage("Trying to drop database, this works only when started new, it take a few minutes,please wait!");
-        if (databaseMasterDB.deleteAllRecordsInDB(USGSDatabase.getDbName())) {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " deleted successfully!");
+        if (databaseMasterDB.deleteAllRecordsInDB(USGSDatabaseHibernate.getDbName())) {
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " deleted successfully!");
         } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " could not be deleted! Sorry!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " could not be deleted! Sorry!");
         }
     }
 
     private void loadDataBase() {
         usgsView.displayMessage("Trying to load database from CSV, it take a few minutes, please wait!");
         ReadCSVFile readCSVFile = new ReadCSVFile();
-        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
         // if (databaseUSGSDB.loadAllRecordsInDB(databaseUSGSDB)) {
         if (readCSVFile.readCSVFileAndUpdateDatabase(databaseUSGSDB)) {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " loaded successfully!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " loaded successfully!");
         } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " could not be loaded! Sorry!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " could not be loaded! Sorry!");
         }
     }
 
     private void queryDataBaseFreeFormForDebugging() {
         boolean done = false;
-        databaseUSGSDB = new USGSDatabase(connectionStringUSGSDB);
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
         while (!done) {
             usgsView.displayQueryDataBaseMenu();
             String word = input.nextLine();
@@ -477,10 +477,10 @@ public class USGSDataInteraction {
         }
     }
     private void createDataBase() {
-        if (!databaseMasterDB.createDB(USGSDatabase.getDbName())) {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " exists, going back to main menu");
+        if (!databaseMasterDB.createDB(USGSDatabaseHibernate.getDbName())) {
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " exists, going back to main menu");
         } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabase.getDbName() + " Created Successfully!!");
+            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " Created Successfully!!");
         }
     }
     public Integer getValidMenuIntegerInput(Integer maxNumber) {

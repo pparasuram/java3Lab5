@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Jun 18, 2016 1:29:07 PM by Hibernate Tools 3.4.0.CR1 -->
+<hibernate-mapping>
+    <class name="cscc.edu.USGSCSVData" table="earthquake_data_2">
+        <id name="id" type="int">
+            <column name="ID" />
+            <generator class="assigned" />
+        </id>
+        <property name="time" type="java.lang.String">
+            <column name="time" />
+        </property>
+        <property name="latitude" type="java.lang.Double">
+            <column name="latitude" />
+        </property>
+        <property name="longitude" type="java.lang.Double">
+            <column name="longitude" />
+        </property>
+        <property name="depth" type="java.lang.Double">
+            <column name="depth" />
+        </property>
+        <property name="mag" type="java.lang.Double">
+            <column name="mag" />
+        </property>
+        <property name="magType" type="java.lang.String">
+            <column name="magType" />
+        </property>
+        <property name="nst" type="java.lang.String">
+            <column name="nst" />
+        </property>
+        <property name="gap" type="java.lang.Double">
+            <column name="gap" />
+        </property>
+        <property name="dmin" type="java.lang.Double">
+            <column name="dmin" />
+        </property>
+        <property name="rms" type="java.lang.Double">
+            <column name="rms" />
+        </property>
+        <property name="net" type="java.lang.String">
+            <column name="net" />
+        </property>
+        <property name="property" type="java.lang.String">
+            <column name="property" />
+        </property>
+        <property name="updated" type="java.lang.String">
+            <column name="updated" />
+        </property>
+        <property name="place" type="java.lang.String">
+            <column name="place" />
+        </property>
+        <property name="type" type="java.lang.String">
+            <column name="type" />
+        </property>
+        <property name="horizontalError" type="java.lang.Double">
+            <column name="horizontalError" />
+        </property>
+        <property name="depthError" type="java.lang.Double">
+            <column name="depthError" />
+        </property>
+        <property name="magError" type="java.lang.Double">
+            <column name="magError" />
+        </property>
+        <property name="magNst" type="java.lang.String">
+            <column name="magNst" />
+        </property>
+        <property name="status" type="java.lang.String">
+            <column name="status" />
+        </property>
+        <property name="locationSource" type="java.lang.String">
+            <column name="locationSource" />
+        </property>
+        <property name="magSource" type="java.lang.String">
+            <column name="magSource" />
+        </property>
+    </class>
+</hibernate-mapping>

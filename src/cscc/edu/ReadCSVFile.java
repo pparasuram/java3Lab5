@@ -10,21 +10,22 @@ import java.sql.SQLException;
 
 public class ReadCSVFile {
     static private String CSV_FILE_NAME = "2007-2017_large_quake.csv";
-
-    public boolean readCSVFileAndUpdateDatabase(USGSDatabase usgsDatabase) {
+    static int counter = 1;
+    public boolean readCSVFileAndUpdateDatabase(USGSDatabaseHibernate usgsDatabase) {
         boolean returnValue = true;
         USGSCSVData usgscsvData = new USGSCSVData();
         int j = 0;
         try {
-            String query = "select count(*) from " + USGSDatabase.TABLE_NAME;
-            usgsDatabase.setStatement(usgsDatabase.getConnection().createStatement());
-            ResultSet rs = usgsDatabase.getStatement().executeQuery(query);
-            rs.next();
-            if (rs.getInt(1) > 0) {
-                System.out.println("Table " + USGSDatabase.TABLE_NAME + " exists and has " + rs.getInt(1) + " rows");
+            // String query = "select count(*) from " + USGSDatabaseSQL.TABLE_NAME;
+            int rowCount = usgsDatabase.getTableRowCountWithHQL();
+//            usgsDatabase.setStatement(usgsDatabase.getConnection().createStatement());//           ResultSet rs = usgsDatabase.getStatement().executeQuery(query);
+//            rs.next();
+//            if (rs.getInt(1) > 0) {
+            if (rowCount > 0 || rowCount == -1) {
+                System.out.println("Table USGSTableData exists and has " + /* rs.getInt(1) */ rowCount + " rows OR dbError encountered");
                 return false;
             }
-            usgsDatabase.setPreparedStatement(usgsDatabase.getConnection().prepareStatement(USGSDatabase.getSqlInsert()));
+//            usgsDatabase.setPreparedStatement(usgsDatabase.getConnection().prepareStatement(USGSDatabaseSQL.getSqlInsert()));
             BufferedReader br = new BufferedReader(new FileReader(CSV_FILE_NAME));
             // this variable points to the buffered line
             String line;
@@ -57,6 +58,10 @@ public class ReadCSVFile {
                             String tempStr = lineData[i].replaceAll("\"", "");
                             lineData[i] = tempStr;
                         }
+                        if (field.getName().equals("id")) {
+                            field.set(usgscsvData, counter++);
+                            continue;
+                        }
                         field.set(usgscsvData, lineData[i++]);
                         if (i >= lineData.length) {
                             break;
@@ -72,9 +77,9 @@ public class ReadCSVFile {
             } // end of while reading csv file is not empty
             // we may have a few prepared statements that are not done yet
             if (usgsDatabase.getCount() > 0) {
-                int[] rows = usgsDatabase.getPreparedStatement().executeBatch();
+                /*int[] rows = usgsDatabase.getPreparedStatement().executeBatch();
                 usgsDatabase.getConnection().commit();
-                usgsDatabase.setCount(0);
+                usgsDatabase.setCount(0);*/
             }
             // a few lines may need to be committed
         } catch (FileNotFoundException e) {
@@ -82,10 +87,6 @@ public class ReadCSVFile {
             return (returnValue = false);
         } catch (IOException e) {
             e.printStackTrace();
-            return (returnValue = false);
-        } catch (SQLException e) {
-            // e.printStackTrace();
-            System.out.println("SQL Error: " + e.getMessage());
             return (returnValue = false);
         }
         return returnValue;
