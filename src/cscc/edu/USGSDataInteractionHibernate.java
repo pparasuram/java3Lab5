@@ -1,9 +1,11 @@
 package cscc.edu;
 
+import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -19,17 +21,20 @@ public class USGSDataInteractionHibernate {
     private static final String MAG = "mag";
     private static final String [] SEARCH_FIELDS = {LATITUDE,LONGITUDE, DEPTH,  MAG};
     public static final int LIMIT = 100;
+    private static final int TABS_PER_COL = 6;
+    private static final int CHARS_PER_TAB = 5;
     private static Scanner input = new Scanner(System.in);
+    boolean firstTime = true;
     USGSView usgsView;
     String connectionStringMasterDB = "jdbc:sqlserver://localhost:1433;databaseName=master;user=sa;password=reallyStrongPwd123";
     String connectionStringUSGSDB = "jdbc:sqlserver://localhost:1433;databaseName="+ USGSDatabaseHibernate.getDbName()+";user=sa;password=reallyStrongPwd123";
     USGSDatabaseHibernate databaseMasterDB = new USGSDatabaseHibernate(connectionStringMasterDB);
-    USGSDatabaseHibernate databaseUSGSDB;
+    USGSDatabaseHibernate databaseUSGSDB = new USGSDatabaseHibernate("");
     // we will store user selections in this, the keys can be:
     // "latitude" , "longitude" , "depth" , and "mag"
     private HashMap<String,Character> searchColumns = new HashMap<String,Character>();
     private HashMap<String,DoubleLowHigh<Double,Double>> searchColumnsDoubleValue = new HashMap<String, DoubleLowHigh<Double,Double>>();
-    private Boolean firstTime = true;
+    private Boolean firstTimeForHeadings = true;
     // DoubleLowHigh<Double,Double> doubleDoubleLowHigh = new DoubleLowHigh<Double,Double>(0.0,0.0);
     public USGSDataInteractionHibernate() {
         this.usgsView = new USGSView();
@@ -75,6 +80,18 @@ public class USGSDataInteractionHibernate {
         }
     }
 
+    private void databaseCountRowsOnSelectedColumnsMenuInteraction() {
+        int rowCount = databaseUSGSDB.getTableRowCountWithHQL(USGSDatabaseHibernate.getCountString());
+        if (rowCount < 0 ) {
+            usgsView.displayMessage("!!!!!! dbError encountered !!!!!!!!!!");
+        } else {
+            usgsView.displayMessage("!!!!!! Count of rows is: !!!!!!!!!!");
+            usgsView.displayMessage("!!!!!! Row Count: "+ rowCount + " !!!!!");
+            usgsView.displayMessage("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        }
+
+    }
+
     private void databaseSearchOnSelectedColumns() {
         // here the challenge is as follows:
         // searchColumns has the columns he wants to search on and has filled
@@ -87,7 +104,7 @@ public class USGSDataInteractionHibernate {
         // collect user supplied parameters
         Map<String, String> params = new HashMap<String, String>();
         Integer limit, offset;
-        ResultSet rs = null;
+
         params = fillParams (params);
         if (!params.isEmpty()) {
             queryString.append(" where ");
@@ -98,74 +115,91 @@ public class USGSDataInteractionHibernate {
             queryCountString = completeQueryString(queryCountString, params);
         }
         /// Stopped here>>>>>>>>>>>>>>>>>>>>>
-        rs = databaseUSGSDB.countSearchedDatabase (queryCountString);
+        String tempString = queryCountString.toString();
+        int rowCount; //getTableRowCountWithHQL(String whereClause)
+        rowCount = databaseUSGSDB.getTableRowCountWithHQL(tempString);
         try {
-            rs.next();
-            int count = rs.getInt("rowcount");
-            offset = 0;
-            if (count <= LIMIT) {
-                usgsView.displayMessage("There are: " + count + " in your search Query!!");
-                limit = count;
-                rs = databaseUSGSDB.searchDatabase (queryString);
-                displaySearchResult(rs);
-            }
-            else {
-                // usgsView.displayMessage("There are: " + count + " in your search Query, and we will page through them and " + "we HAVE to order them in time descending!!".toUpperCase());
-                usgsView.displayMessageNoLineBreak("There are: " + count + " in your search Query, do you want to see them all or Scroll " + LIMIT + " at a time Y/n?");
-                if (toUpperCase(getValidMenuCharacterInput("YyNn")) == 'Y') {
-                    limit = LIMIT;
-                    queryString.append(" order by time desc\n" +
-                            "OFFSET ? ROWS\n" +
-                            "FETCH NEXT ? ROWS ONLY;");
-                    while (offset < count) {
-                        rs = databaseUSGSDB.searchDatabaseWithLimitAndOffset(queryString, limit, offset);
-                        offset += limit;
-                        displaySearchResult(rs);
-                        usgsView.displayMessageNoLineBreak("Do you want to see more " + LIMIT + " entries from: " + offset + " Y/n? ");
-                        if (toUpperCase(getValidMenuCharacterInput("YyNn")) == 'Y')
-                            continue;
-                        else
-                            break;
-                    }
-                }
-                else {
-                    // he wants it all in one shot:
-                    usgsView.displayMessage("There are: " + count + " in your search Query!!");
-                    limit = count;
-                    rs = databaseUSGSDB.searchDatabase (queryString);
-                    displaySearchResult(rs);
-                }
-            }
-        } catch (SQLException e) {
-            // e.printStackTrace();
-            usgsView.displayMessage("Sql error: " + e.getCause());
-        }
-    }
-
-    private void displaySearchResult(ResultSet rs) {
-        String columnValue;
-        usgsView.displayMessage("Result is: " + rs);
-        ResultSetMetaData rsmd = null;
-        try {
-            rsmd = rs.getMetaData();
-            int columnsNumber = rsmd.getColumnCount();
-            for (int i = 1; i <= columnsNumber; i++) {
-                if (i > 1) usgsView.displayMessageNoLineBreak("\t\t\t\t|\t\t\t");
-                usgsView.displayMessageNoLineBreak(rsmd.getColumnName(i));
-            }
-            usgsView.displayMessage("");
-            while (rs.next()) {
-                for (int i = 1; i <= columnsNumber; i++) {
-                    if (i > 1) usgsView.displayMessageNoLineBreak("\t\t\t|\t\t\t");
-                    columnValue = rs.getString(i);
-                    usgsView.displayMessageNoLineBreak(columnValue);
-                }
-                usgsView.displayMessage("");
-            }
-        } catch (SQLException ex) {
+                usgsView.displayMessage("There are: " + rowCount + " in your search Query!!");
+                limit = rowCount;
+                List<USGSTableData> resultList = databaseUSGSDB.searchDatabase (queryString);
+                displaySearchResult(resultList);
+            } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
+    private void displaySearchResult(List<USGSTableData> resultList) {
+        String columnValue;
+        // usgsView.displayMessage("Result is: " + resultList);
+        firstTimeForHeadings = true;
+        USGSTableData tempUSGSTableData = new USGSTableData();
+        printHeadings(tempUSGSTableData);
+        firstTimeForHeadings = false;
+        for (USGSTableData usgsTableData : resultList) {
+            displayUSGSTableData(usgsTableData);
+            firstTimeForHeadings = false;
+        }
+    }
+
+    private void displayUSGSTableData(USGSTableData usgsTableData) {
+        Class<?> c = usgsTableData.getClass();
+        Field[] f = c.getDeclaredFields();
+        for (Field field : f) {
+//                    System.out.println(field);
+//                    System.out.println(field.getType());
+//                    System.out.println(field.getAnnotatedType());
+            field.setAccessible(true);
+            int tabsBefore;
+            int tabsAfter;
+            int fieldLength = field.getName().length();
+                try {
+                    fieldLength = field.get(usgsTableData).toString().length();
+                    tabsBefore = calcBeforeTabs(fieldLength);
+                    if ((tabsAfter = (TABS_PER_COL - tabsBefore - fieldLength)) < 0 )
+                        tabsAfter = 0;
+                    printTabs(tabsBefore);
+                    usgsView.displayMessageNoLineBreak(field.get(usgsTableData).toString());
+                    printTabs(tabsAfter);
+                    usgsView.displayMessageNoLineBreak("|");
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+        } // end of iterating through fields
+        firstTimeForHeadings = false;
+        usgsView.displayMessage("");
+    }
+    private void printHeadings(USGSTableData usgsTableData) {
+        Class<?> c = usgsTableData.getClass();
+        Field[] f = c.getDeclaredFields();
+        for (Field field : f) {
+            field.setAccessible(true);
+            int tabsBefore;
+            int tabsAfter;
+            int fieldLength = field.getName().length();
+            tabsBefore = calcBeforeTabs(fieldLength);
+            if ((tabsAfter = (TABS_PER_COL - tabsBefore - fieldLength)) < 0)
+                tabsAfter = 0;
+            printTabs(tabsBefore);
+            usgsView.displayMessageNoLineBreak(field.getName());
+            printTabs(tabsAfter);
+            usgsView.displayMessageNoLineBreak("|");
+        }
+        usgsView.displayMessage("");
+    }
+
+    private void printTabs(int numTabs) {
+        for (int i = 1; i < numTabs; i++)
+            usgsView.displayMessageNoLineBreak("\t");
+    }
+
+    private int calcBeforeTabs(int fieldLength) {
+        int tabsByField = fieldLength / CHARS_PER_TAB; // this int div will give number of tabs taken by field
+        if ((TABS_PER_COL - tabsByField) > 0)
+            if ((TABS_PER_COL - tabsByField) > 1)
+                return 1;
+        return 0;
+    }
+
     private StringBuilder completeQueryString(StringBuilder queryString, Map<String, String> params) {
         params.forEach((k, v) -> {
             assembleQueryString(k,v,queryString);
@@ -189,16 +223,16 @@ public class USGSDataInteractionHibernate {
                 // yes he wants to query on the searchField
                 params.put(searchField, "");
                 // now build the string
-                DoubleLowHigh dLH = searchColumnsDoubleValue.get(searchField);
+                DoubleLowHigh<Double, Double> dLH = searchColumnsDoubleValue.get(searchField);
                 if (dLH.getHigh() == null) {// means he does not want a range
-                    params.put(searchField, " = " + (dLH.getLow()== null ? 0: dLH.getLow()).toString());
+                    params.put(searchField, " = " + (dLH.getLow()== null ? 0: dLH.getLow().toString()));
                 } else {
                     // he wants a range
                     if (dLH.getLow() != null)
-                            if ((Double) dLH.getLow() <= (Double) dLH.getHigh())
-                                params.put(searchField, " BETWEEN " + dLH.getLow() + " AND " + dLH.getHigh());
+                            if (dLH.getLow() <= dLH.getHigh())
+                                params.put(searchField, " >= " + dLH.getLow() + " AND " + searchField + " <= " + dLH.getHigh());
                             else
-                                params.put(searchField, " BETWEEN " + dLH.getHigh() + " AND " + dLH.getLow());
+                                params.put(searchField, " >= " + dLH.getHigh() + " AND " + searchField + " <= " + dLH.getLow());
                     else // dLH.Low is null but high is not
                         params.put(searchField, " = " + dLH.getHigh());
                 }
@@ -208,7 +242,7 @@ public class USGSDataInteractionHibernate {
         return params;
     }  // end of fillParams
 
-    private void databaseCountRowsOnSelectedColumnsMenuInteraction() {
+   /* private void databaseCountRowsOnSelectedColumnsMenuInteraction() {
         // here the challenge is as follows:
         // searchColumns has the columns he wants to search on and has filled
         // searchColumnsDoubleValue has the low and high for these 2 columns
@@ -230,13 +264,16 @@ public class USGSDataInteractionHibernate {
         try {
             rs.next();
             int count = rs.getInt("rowcount");
-            usgsView.displayMessage("There are: " + count + " in your search Query!!");
+            usgsView.displayDashesWithEquals();
+            usgsView.displayMessage("!!!!!!!!  There are: " + count + " in your search Query !!!!!!!");
+            usgsView.displayDashesWithEquals();
         } catch (SQLException e) {
             // e.printStackTrace();
             usgsView.displayMessage("Sql error: " + e.getCause());
         }
-    }
+    }*/
     private void databaseDeleteRowOnSelectedColumnsMenuInteraction() {
+
         // here the challenge is as follows:
         // searchColumns has the columns he wants to search on and has filled
         // searchColumnsDoubleValue has the low and high for these 2 columns
@@ -247,8 +284,6 @@ public class USGSDataInteractionHibernate {
         // queryString now has get * from earthquake_data add stuff to it
         // collect user supplied parameters
         Map<String, String> params = new HashMap<String, String>();
-        Integer limit, offset;
-        ResultSet rs = null;
         params = fillParams (params);
         if (!params.isEmpty()) {
             queryString.append(" where ");
@@ -258,24 +293,23 @@ public class USGSDataInteractionHibernate {
             firstTime = true;
             queryCountString = completeQueryString(queryCountString, params);
         }
-        rs = databaseUSGSDB.countSearchedDatabase (queryCountString);
+        String tempString = queryCountString.toString();
+        int rowCount; //getTableRowCountWithHQL(String whereClause)
+        rowCount = databaseUSGSDB.getTableRowCountWithHQL(tempString);
         try {
-            rs.next();
-            int count = rs.getInt("rowcount");
-            // offset = 0;
-            // if (count <= LIMIT) {
-            if (count == 0)
+            if (rowCount == 0)
                 usgsView.displayMessage("Nothing to delete Count of records is Zero, returning to Menu!");
             else {
-                usgsView.displayMessageNoLineBreak("There are: " + count + " in your search Query, do you want to DELETE them all Y/n?");
+                usgsView.displayMessageNoLineBreak("There are: " + rowCount + " in your search Query, do you want to DELETE them all Y/n?");
                 if (toUpperCase(getValidMenuCharacterInput("YyNn")) == 'Y') {
-                    rs = databaseUSGSDB.searchDatabase(queryString);
+                    databaseUSGSDB.deleteRowsFromUSGSTableData(queryString);
+
                 } else
                     usgsView.displayMessage("Okay no deletion done, returning to Menu!");
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             // e.printStackTrace();
-            usgsView.displayMessage("Sql error: " + e.getCause());
+            usgsView.displayMessage("error: " + e.getCause());
         }
 
     }
@@ -295,7 +329,7 @@ public class USGSDataInteractionHibernate {
         if ( v != null)
             if (compare(toUpperCase(v), 'Y')== 0) {
                 getSearchColumnHighLowDoubleValueInput(k);
-            };
+            }
     }
     private void getSearchColumnHighLowDoubleValueInput(String searchColumn) {
         usgsView.displayMessage("!!!!!!!!     USGS Database Select Values for Columns Menu         !!!!!!!!");
@@ -360,7 +394,7 @@ public class USGSDataInteractionHibernate {
         boolean done = false;
         while (!done) {
             usgsView.displayDDLMenu();
-            switch (getValidMenuIntegerInput(usgsView.DatabaseCreationMenuMaxNumber)) {
+            switch (getValidMenuIntegerInput(USGSView.DatabaseCreationMenuMaxNumber)) {
                 case 0:
                     done = true;
                     usgsView.displayGoingBackToMainMenuScreen();

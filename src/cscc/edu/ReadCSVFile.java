@@ -17,7 +17,7 @@ public class ReadCSVFile {
         int j = 0;
         try {
             // String query = "select count(*) from " + USGSDatabaseSQL.TABLE_NAME;
-            int rowCount = usgsDatabase.getTableRowCountWithHQL();
+            int rowCount = usgsDatabase.getTableRowCountWithHQL(USGSDatabaseHibernate.getCountString());
 //            usgsDatabase.setStatement(usgsDatabase.getConnection().createStatement());//           ResultSet rs = usgsDatabase.getStatement().executeQuery(query);
 //            rs.next();
 //            if (rs.getInt(1) > 0) {

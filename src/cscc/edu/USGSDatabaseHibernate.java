@@ -1,6 +1,5 @@
 package cscc.edu;
 
-import com.microsoft.sqlserver.jdbc.SQLServerException;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -23,7 +22,8 @@ public class USGSDatabaseHibernate {
     static private final String DB_NAME = "usgs";
     // static public final String TABLE_NAME = "earthquake_data"; "USGSTableData"
     static public final String TABLE_NAME = "USGSTableData";
-    public static final String SELECT_STRING = "SELECT * FROM " + TABLE_NAME + " ";
+    // public static final String SELECT_STRING = "SELECT * FROM " + TABLE_NAME + " ";
+    public static final String SELECT_STRING = "FROM " + TABLE_NAME + " ";
     public static String getDeleteString() {
         return DELETE_STRING;
     }
@@ -122,17 +122,7 @@ public class USGSDatabaseHibernate {
         }
     }
     public boolean createTable () {
-        String query;
-        try {
-            query = CREATE_TABLE_STRING;
-            statement = connection.createStatement();
-            statement.execute(query);
-            return true;
-        } catch (SQLException e) {
-            // e.printStackTrace();
-            System.out.println("SQL Error: " + e.getMessage());
-            return false;
-        }
+        return false;
     }
     public boolean closeDB() {
         try {
@@ -174,7 +164,6 @@ public class USGSDatabaseHibernate {
             return false;
         }
     }
-
     public boolean addRowToDBTable(USGSCSVData usgscsvData, USGSDatabaseHibernate usgsDatabase) {
         // USGSCSVData usgscsvData has the data create a row in table and fill it with data
         boolean returnValue = true;
@@ -200,13 +189,46 @@ public class USGSDatabaseHibernate {
                 count = 0;
             }
 */
-        transaction.commit();
+            transaction.commit();
         } catch ( Throwable e) {
             e.printStackTrace();
             return(returnValue = false);
         }
         return returnValue;
     }
+/*
+    public boolean addRowToDBTable(USGSCSVData usgscsvData, USGSDatabaseHibernate usgsDatabase) {
+        // USGSCSVData usgscsvData has the data create a row in table and fill it with data
+        boolean returnValue = true;
+        count++;
+        try {
+            // connection.setAutoCommit(false); // default true
+            transaction = session.beginTransaction();
+
+            // new OldSQLInsert(usgscsvData, usgsDatabase).invoke();
+            // linear update
+            USGSTableData usgsTableData = new USGSTableData();
+            fillUSGSTableDataFromCSVData(usgscsvData, usgsTableData);
+            session.saveOrUpdate(usgsTableData);
+
+            *//*Query query = session.createQuery(getInsertQueryString());
+            int rowsAffected = query.executeUpdate();
+            System.out.println("Rows affected: " + rowsAffected);*//*
+*//*
+            if (count >= BATCH_COUNT) {
+                int[] rows = usgsDatabase.preparedStatement.executeBatch();
+                // System.out.println(Arrays.toString(rows));
+                usgsDatabase.connection.commit();
+                count = 0;
+            }
+*//*
+        transaction.commit();
+        } catch ( Throwable e) {
+            e.printStackTrace();
+            return(returnValue = false);
+        }
+        return returnValue;
+    }*/
 
     private void fillUSGSTableDataFromCSVData(USGSCSVData usgscsvData, USGSTableData usgsTableData) {
         if (usgscsvData.latitude == null || Objects.equals(usgscsvData.latitude, "") || usgscsvData.latitude.isEmpty())
@@ -281,104 +303,35 @@ public class USGSDatabaseHibernate {
         }
         return null;
     }
-    public ResultSet searchDatabase (StringBuilder queryString) {
-        /*
-        String query = "select * from " + USGSDatabase.TABLE_NAME  + " where " +
-                                " latitude > ? and latitude < ? and" +
-                                " longitude > ? and longitude < ? and" +
-                                " depth > ? and depth < ? and" +
-                                " mag > ? and mag < ?";
-        // String query = "select count(*) from " + USGSDatabase.TABLE_NAME;
-        // luckily for us queryString is ready to send to sql
-         */
-        // queryString.append(" LIMIT ? OFFSET ? ");
-        ResultSet rs = null;
+    public boolean deleteRowsFromUSGSTableData(StringBuilder hql) {
+        // USGSCSVData usgscsvData has the data create a row in table and fill it with data
+        boolean returnValue = true;
         try {
-            // this.setStatement(this.getConnection().createStatement());
-            this.setPreparedStatement(this.getConnection().prepareStatement(queryString.toString()));
-            System.out.println("qs is: " + queryString.toString());
-            if (!queryString.toString().toUpperCase().contains("DELETE"))
-                rs = this.getPreparedStatement().executeQuery();
-            else {
-                this.getPreparedStatement().execute();
-                usgsView.displayMessage("Successful Delete !!!");
-            }
-        } catch (SQLServerException e) {
+            // connection.setAutoCommit(false); // default true
+            transaction = session.beginTransaction();
+            // new OldSQLInsert(usgscsvData, usgsDatabase).invoke();
+            // linear update
+            Query query = session.createQuery(hql.toString());
+            query.executeUpdate();
+            transaction.commit();
+            /*Query query = session.createQuery(getInsertQueryString());
+            int rowsAffected = query.executeUpdate();
+            System.out.println("Rows affected: " + rowsAffected);*/
 
-        }
-        catch (SQLException e) {
+        } catch ( Throwable e) {
             e.printStackTrace();
+            transaction.rollback();
+            return(returnValue = false);
         }
-        return rs;
+        return returnValue;
     }
-    public ResultSet searchDatabaseWithLimitAndOffset (StringBuilder queryString, Integer limit, Integer offset) {
-        /*
-        String query = "select * from " + USGSDatabase.TABLE_NAME  + " where " +
-                                " latitude > ? and latitude < ? and" +
-                                " longitude > ? and longitude < ? and" +
-                                " depth > ? and depth < ? and" +
-                                " mag > ? and mag < ?";
-        // String query = "select count(*) from " + USGSDatabase.TABLE_NAME;
-        // luckily for us queryString is ready to send to sql
-         */
-        ResultSet rs = null;
-        try {
-            // this.setStatement(this.getConnection().createStatement());
-            this.preparedStatement = this.getConnection().prepareStatement(queryString.toString());
-            System.out.println("qs is: " + queryString.toString());
-            this.preparedStatement.setInt(1, offset);
-            this.preparedStatement.setInt(2, limit);
-            rs = this.preparedStatement.executeQuery();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return rs;
-    }
-    public ResultSet countSearchedDatabase(StringBuilder queryCountString) {
-        /*
-        String query = "select * from " + USGSDatabase.TABLE_NAME  + " where " +
-                                " latitude > ? and latitude < ? and" +
-                                " longitude > ? and longitude < ? and" +
-                                " depth > ? and depth < ? and" +
-                                " mag > ? and mag < ?";
-        // String query = "select count(*) from " + USGSDatabase.TABLE_NAME;
-        // luckily for us queryString is ready to send to sql
-         */
-        // queryString.append(" LIMIT ? OFFSET ? ");
-        ResultSet rs = null;
-        try {
-            // this.setStatement(this.getConnection().createStatement());
-            usgsView.displayMessage("String is: " + queryCountString.toString());
-            this.setPreparedStatement(this.getConnection().prepareStatement(queryCountString.toString()));
-            rs = this.getPreparedStatement().executeQuery();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return rs;
-    }
-    public ResultSet executePreparedSql(String sql) {
-        System.out.print("Connecting to SQL Server ... ");
-        try {
-            // preparedStatement.executeQuery(sql);
-            // sql = "SELECT * FROM my_temp_db";
-            // "SELECT * FROM INFORMATION_SCHEMA.TABLES"
-            // sql = ("SELECT * FROM INFORMATION_SCHEMA.TABLES");
-            ResultSet rs = preparedStatement.executeQuery(sql);
-            System.out.println("Done.");
-            return rs;
-            // preparedStatement.addBatch("");
-        }
-        catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getCause());
-        }
-        catch (Exception e) {
-            System.out.println();
-            e.printStackTrace();
-        }
-        return null;
+    public List<USGSTableData> searchDatabase (StringBuilder queryString) {
+        Query query = session.createQuery(queryString.toString());
+        List<USGSTableData> resultList = query.getResultList();
+        return resultList;
     }
 
-    public int getTableRowCountWithHQL() {
+    public int getTableRowCountWithHQL(String getCountString) {
         // USGSCSVData usgscsvData has the data create a row in table and fill it with data
         int returnValue = -1;
         // count++;
@@ -391,8 +344,7 @@ public class USGSDatabaseHibernate {
            // Query query =
            //  session.createQuery("select count(*) from USGSTableData)").list().size();
 
-            String hql = USGSDatabaseHibernate.getCountString();
-
+            String hql =  getCountString ;
             Query query = session.createQuery(hql);
             List listResult = query.list();
             Number number = (Number) listResult.get(0);
