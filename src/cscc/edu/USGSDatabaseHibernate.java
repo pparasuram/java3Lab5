@@ -21,30 +21,8 @@ import java.util.Objects;
 public class USGSDatabaseHibernate {
     static private final Integer BATCH_COUNT = 100;
     static private final String DB_NAME = "usgs";
-    static public final String TABLE_NAME = "earthquake_data";
-    static private final String CREATE_TABLE_STRING = "CREATE TABLE " + /* DB_NAME + "."+*/ TABLE_NAME +
-            " (time datetime, " +
-            " latitude real, " +
-            " longitude real, " +
-            " depth real, " +
-            " mag real, " +
-            " magType varchar(5), " +
-            " nst varchar(5), " +
-            " gap real, " +
-            " dmin real, " +
-            " rms real, " +
-            " net varchar(8), " +
-            " id varchar(30), " +
-            " updated datetime, " +
-            " place varchar (100), " +
-            " type varchar(25), " +
-            " horizontalError real, " +
-            " depthError real, " +
-            " magError real, " +
-            " magNst varchar(5), " +
-            " status varchar(10), " +
-            " locationSource varchar(10), " +
-            " magSource varchar(10))";
+    // static public final String TABLE_NAME = "earthquake_data"; "USGSTableData"
+    static public final String TABLE_NAME = "USGSTableData";
     public static final String SELECT_STRING = "SELECT * FROM " + TABLE_NAME + " ";
     public static String getDeleteString() {
         return DELETE_STRING;
@@ -53,34 +31,8 @@ public class USGSDatabaseHibernate {
     public static String getCountString() {
         return COUNT_STRING;
     }
-    public static final String COUNT_STRING = "SELECT count(*) AS [rowcount]  FROM " + TABLE_NAME + " ";
-    public static String getSqlInsert() {
-        return SQL_INSERT;
-    }
-    private static final String SQL_INSERT = "INSERT INTO " + TABLE_NAME +
-            " (time, " +
-            "latitude, " +
-            "longitude, " +
-            "depth, " +
-            "mag, " +
-            "magType, " +
-            "nst, " +
-            "gap, " +
-            "dmin, " +
-            "rms, " +
-            "net, " +
-            "id, " +
-            "updated, " +
-            "place, " +
-            "type, " +
-            "horizontalError, " +
-            "depthError, " +
-            "magError, " +
-            "magNst, " +
-            "status, " +
-            "locationSource, " +
-            "magSource) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" ;
+    public static final String COUNT_STRING = "select count(*) from " + TABLE_NAME + " ";
+
     static private final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     static private int count = 0;
     private String connectionUrl;
@@ -233,9 +185,13 @@ public class USGSDatabaseHibernate {
 
             // new OldSQLInsert(usgscsvData, usgsDatabase).invoke();
             // linear update
-            Query query = session.createQuery(getInsertQueryString());
+            USGSTableData usgsTableData = new USGSTableData();
+            fillUSGSTableDataFromCSVData(usgscsvData, usgsTableData);
+            session.saveOrUpdate(usgsTableData);
+
+            /*Query query = session.createQuery(getInsertQueryString());
             int rowsAffected = query.executeUpdate();
-            System.out.println("Rows affected: " + rowsAffected);
+            System.out.println("Rows affected: " + rowsAffected);*/
 /*
             if (count >= BATCH_COUNT) {
                 int[] rows = usgsDatabase.preparedStatement.executeBatch();
@@ -251,51 +207,55 @@ public class USGSDatabaseHibernate {
         }
         return returnValue;
     }
+
+    private void fillUSGSTableDataFromCSVData(USGSCSVData usgscsvData, USGSTableData usgsTableData) {
+        if (usgscsvData.latitude == null || Objects.equals(usgscsvData.latitude, "") || usgscsvData.latitude.isEmpty())
+            usgscsvData.latitude = "0";
+        if (usgscsvData.longitude == null || usgscsvData.longitude == "" || usgscsvData.longitude.isEmpty())
+            usgscsvData.longitude = "0";
+        if (usgscsvData.depth == null || usgscsvData.depth == "" || usgscsvData.depth.isEmpty())
+            usgscsvData.depth = "0";
+        if (usgscsvData.mag == null || usgscsvData.mag == "" || usgscsvData.mag.isEmpty())
+            usgscsvData.mag = "0";
+        if (usgscsvData.gap == null || usgscsvData.gap == "" || usgscsvData.gap.isEmpty())
+            usgscsvData.gap = "0";
+        if (usgscsvData.dmin == null || usgscsvData.dmin == "" || usgscsvData.dmin.isEmpty())
+            usgscsvData.dmin = "0";
+        if (usgscsvData.rms == null || usgscsvData.rms == "" || usgscsvData.rms.isEmpty())
+            usgscsvData.rms = "0";
+        if (usgscsvData.horizontalError == null || usgscsvData.horizontalError == "" || usgscsvData.horizontalError.isEmpty())
+            usgscsvData.horizontalError = "0";
+        if (usgscsvData.depthError == null || usgscsvData.depthError == "" || usgscsvData.depthError.isEmpty())
+            usgscsvData.depthError = "0";
+        if (usgscsvData.magError == null || usgscsvData.magError == "" || usgscsvData.magError.isEmpty())
+            usgscsvData.magError = "0";
+        usgsTableData.setId(usgscsvData.getId());
+        usgsTableData.setTime(usgscsvData.getTime());
+        usgsTableData.setLatitude(Double.valueOf(usgscsvData.getLatitude()));
+        usgsTableData.setLongitude(Double.valueOf(usgscsvData.getLongitude()));
+        usgsTableData.setDepth(Double.valueOf(usgscsvData.getDepth()));
+        usgsTableData.setMag(Double.valueOf(usgscsvData.getMag()));
+        usgsTableData.setMagType(usgscsvData.getMagType());
+        usgsTableData.setNst(usgscsvData.getNst());
+        usgsTableData.setGap(Double.valueOf(usgscsvData.getGap()));
+        usgsTableData.setDmin(Double.valueOf(usgscsvData.getDmin()));
+        usgsTableData.setRms(Double.valueOf(usgscsvData.getRms()));
+        usgsTableData.setNet(usgscsvData.getNet());
+        usgsTableData.setEq_id(usgscsvData.getEq_id());
+        usgsTableData.setUpdated(usgscsvData.getUpdated());
+        usgsTableData.setPlace(usgscsvData.getPlace());
+        usgsTableData.setType(usgscsvData.getType());
+        usgsTableData.setHorizontalError(Double.valueOf(usgscsvData.getHorizontalError()));
+        usgsTableData.setDepthError(Double.valueOf(usgscsvData.getDepthError()));
+        usgsTableData.setMagError(Double.valueOf(usgscsvData.getMagError()));
+        usgsTableData.setMagNst(usgscsvData.getMagNst());
+        usgsTableData.setStatus(usgscsvData.getStatus());
+        usgsTableData.setLocationSource(usgscsvData.getLocationSource());
+        usgsTableData.setMagSource(usgscsvData.getMagSource());
+    }
+
     private String getInsertQueryString() {
-        return "insert into USGSTableData(id,\n" +
-                "time,\n" +
-                "latitude,\n" +
-                "longitude,\n" +
-                "depth,\n" +
-                "mag,\n" +
-                "magType,\n" +
-                "nst,\n" +
-                "gap,\n" +
-                "dmin,\n" +
-                "rms,\n" +
-                "net,\n" +
-                "eq_id,\n" +
-                "updated,\n" +
-                "place,\n" +
-                "type,\n" +
-                "horizontalError,\n" +
-                "depthError,\n" +
-                "magError,\n" +
-                "magNst,\n" +
-                "status,\n" +
-                "locationSource,\n" +
-                "magSource)" + " select id, time,\n" +
-                "latitude,\n" +
-                "longitude,\n" +
-                "depth,\n" +
-                "mag,\n" +
-                "magType,\n" +
-                "nst,\n" +
-                "gap,\n" +
-                "dmin,\n" +
-                "rms,\n" +
-                "net,\n" +
-                "eq_id,\n" +
-                "updated,\n" +
-                "place,\n" +
-                "type,\n" +
-                "horizontalError,\n" +
-                "depthError,\n" +
-                "magError,\n" +
-                "magNst,\n" +
-                "status,\n" +
-                "locationSource,\n" +
-                "magSource from usgscsvData";
+        return "insert into USGSTableData(id,  time,  latitude,  longitude,  depth,  mag,  magType,  nst,  gap,  dmin,  rms,  net,  eq_id,  updated,  place,  type,  horizontalError,  depthError,  magError,  magNst,  status,  locationSource,  magSource) select id, time,  latitude,  longitude,  depth,  mag,  magType,  nst,  gap,  dmin,  rms,  net,  eq_id,  updated,  place,  type,  horizontalError,  depthError,  magError,  magNst,  status,  locationSource,  magSource from USGSCSVData";
     }
 
     public ResultSet executeSingleSql(String sql) {
@@ -431,7 +391,7 @@ public class USGSDatabaseHibernate {
            // Query query =
            //  session.createQuery("select count(*) from USGSTableData)").list().size();
 
-            String hql = "select count(*) from USGSTableData";
+            String hql = USGSDatabaseHibernate.getCountString();
 
             Query query = session.createQuery(hql);
             List listResult = query.list();

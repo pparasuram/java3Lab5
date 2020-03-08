@@ -12,7 +12,7 @@ import static java.lang.Character.compare;
 import static java.lang.Character.toUpperCase;
 
 
-public class USGSDataInteraction {
+public class USGSDataInteractionHibernate {
     private static final String LATITUDE = "latitude";
     private static final String LONGITUDE = "longitude";
     private static final String DEPTH = "depth";
@@ -31,7 +31,7 @@ public class USGSDataInteraction {
     private HashMap<String,DoubleLowHigh<Double,Double>> searchColumnsDoubleValue = new HashMap<String, DoubleLowHigh<Double,Double>>();
     private Boolean firstTime = true;
     // DoubleLowHigh<Double,Double> doubleDoubleLowHigh = new DoubleLowHigh<Double,Double>(0.0,0.0);
-    public USGSDataInteraction() {
+    public USGSDataInteractionHibernate() {
         this.usgsView = new USGSView();
         searchColumns.put(LATITUDE,null);
         searchColumns.put(LONGITUDE,null);
@@ -80,7 +80,7 @@ public class USGSDataInteraction {
         // searchColumns has the columns he wants to search on and has filled
         // searchColumnsDoubleValue has the low and high for these 2 columns
         // we need to call the database search with these 2 hashmaps, and formulate the search string
-        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
+        // databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
         StringBuilder queryString = new StringBuilder (USGSDatabaseHibernate.getSelectString());
         StringBuilder queryCountString = new StringBuilder (USGSDatabaseHibernate.getCountString());
         // queryString now has get * from earthquake_data add stuff to it
@@ -97,6 +97,7 @@ public class USGSDataInteraction {
             firstTime = true;
             queryCountString = completeQueryString(queryCountString, params);
         }
+        /// Stopped here>>>>>>>>>>>>>>>>>>>>>
         rs = databaseUSGSDB.countSearchedDatabase (queryCountString);
         try {
             rs.next();

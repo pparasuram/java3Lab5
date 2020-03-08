@@ -209,6 +209,15 @@ public class USGSTableData {
     }
 
 
+    public String getEq_id() {
+        return eq_id;
+    }
+
+    public void setEq_id(String eq_id) {
+        this.eq_id = eq_id;
+    }
+
+
     public USGSTableData() {
     }
 }

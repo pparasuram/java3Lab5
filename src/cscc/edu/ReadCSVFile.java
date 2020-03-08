@@ -76,12 +76,6 @@ public class ReadCSVFile {
                 // System.out.println("processed line: " + j++ + " place: " + usgscsvData.place);
             } // end of while reading csv file is not empty
             // we may have a few prepared statements that are not done yet
-            if (usgsDatabase.getCount() > 0) {
-                /*int[] rows = usgsDatabase.getPreparedStatement().executeBatch();
-                usgsDatabase.getConnection().commit();
-                usgsDatabase.setCount(0);*/
-            }
-            // a few lines may need to be committed
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             return (returnValue = false);
