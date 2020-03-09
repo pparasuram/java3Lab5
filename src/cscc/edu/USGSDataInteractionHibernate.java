@@ -81,7 +81,12 @@ public class USGSDataInteractionHibernate {
     }
 
     private void databaseCountRowsOnSelectedColumnsMenuInteraction() {
-        int rowCount = databaseUSGSDB.getTableRowCountWithHQL(USGSDatabaseHibernate.getCountString());
+        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
+        StringBuilder queryString = new StringBuilder (USGSDatabaseHibernate.getCountString());
+        // queryString now has get * from earthquake_data add stuff to it
+        // collect user supplied parameters
+        String tempString = getCompleteQueryString(queryString);
+        int rowCount = databaseUSGSDB.getTableRowCountWithHQL(tempString);
         if (rowCount < 0 ) {
             usgsView.displayMessage("!!!!!! dbError encountered !!!!!!!!!!");
         } else {
@@ -90,6 +95,18 @@ public class USGSDataInteractionHibernate {
             usgsView.displayMessage("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
 
+    }
+
+    private String getCompleteQueryString(StringBuilder queryString) {
+        Map<String, String> params = new HashMap<String, String>();
+        params = fillParams (params);
+        if (!params.isEmpty()) {
+            queryString.append(" where ");
+            firstTime = true;
+            queryString = completeQueryString(queryString, params);
+            firstTime = true;
+        }
+        return queryString.toString();
     }
 
     private void databaseSearchOnSelectedColumns() {
@@ -102,7 +119,10 @@ public class USGSDataInteractionHibernate {
         StringBuilder queryCountString = new StringBuilder (USGSDatabaseHibernate.getCountString());
         // queryString now has get * from earthquake_data add stuff to it
         // collect user supplied parameters
-        Map<String, String> params = new HashMap<String, String>();
+        String tempQueryString = getCompleteQueryString(queryString);
+        String tempCountQueryString = getCompleteQueryString(queryCountString);
+        //////////////////////////////////////////////////////////////////////////////
+        /*Map<String, String> params = new HashMap<String, String>();
         Integer limit, offset;
 
         params = fillParams (params);
@@ -113,15 +133,15 @@ public class USGSDataInteractionHibernate {
             queryString = completeQueryString(queryString, params);
             firstTime = true;
             queryCountString = completeQueryString(queryCountString, params);
-        }
-        /// Stopped here>>>>>>>>>>>>>>>>>>>>>
-        String tempString = queryCountString.toString();
+        }*/
+        // String tempString = queryCountString.toString();
+        ///////////////////////////////////////////////////////////////////////////////////
         int rowCount; //getTableRowCountWithHQL(String whereClause)
-        rowCount = databaseUSGSDB.getTableRowCountWithHQL(tempString);
+        rowCount = databaseUSGSDB.getTableRowCountWithHQL(tempCountQueryString);
         try {
                 usgsView.displayMessage("There are: " + rowCount + " in your search Query!!");
-                limit = rowCount;
-                List<USGSTableData> resultList = databaseUSGSDB.searchDatabase (queryString);
+                // limit = rowCount;
+                List<USGSTableData> resultList = databaseUSGSDB.searchDatabase (tempQueryString);
                 displaySearchResult(resultList);
             } catch (Exception ex) {
             ex.printStackTrace();
@@ -241,37 +261,6 @@ public class USGSDataInteractionHibernate {
         } // end of foreach searchField
         return params;
     }  // end of fillParams
-
-   /* private void databaseCountRowsOnSelectedColumnsMenuInteraction() {
-        // here the challenge is as follows:
-        // searchColumns has the columns he wants to search on and has filled
-        // searchColumnsDoubleValue has the low and high for these 2 columns
-        // we need to call the database search with these 2 hashmaps, and formulate the search string
-        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
-        StringBuilder queryCountString = new StringBuilder(USGSDatabaseHibernate.getCountString());
-        // queryString now has get * from earthquake_data add stuff to it
-        // collect user supplied parameters
-        Map<String, String> params = new HashMap<String, String>();
-        // Integer limit, offset;
-        ResultSet rs = null;
-        params = fillParams(params);
-        if (!params.isEmpty()) {
-            queryCountString.append(" where ");
-            firstTime = true;
-            queryCountString = completeQueryString(queryCountString, params);
-        }
-        rs = databaseUSGSDB.countSearchedDatabase(queryCountString);
-        try {
-            rs.next();
-            int count = rs.getInt("rowcount");
-            usgsView.displayDashesWithEquals();
-            usgsView.displayMessage("!!!!!!!!  There are: " + count + " in your search Query !!!!!!!");
-            usgsView.displayDashesWithEquals();
-        } catch (SQLException e) {
-            // e.printStackTrace();
-            usgsView.displayMessage("Sql error: " + e.getCause());
-        }
-    }*/
     private void databaseDeleteRowOnSelectedColumnsMenuInteraction() {
 
         // here the challenge is as follows:
@@ -283,7 +272,10 @@ public class USGSDataInteractionHibernate {
         StringBuilder queryCountString = new StringBuilder (USGSDatabaseHibernate.getCountString());
         // queryString now has get * from earthquake_data add stuff to it
         // collect user supplied parameters
-        Map<String, String> params = new HashMap<String, String>();
+        String tempQueryString = getCompleteQueryString(queryString);
+        String tempCountQueryString = getCompleteQueryString(queryCountString);
+        ////////////////////////////////////////////////////////////////
+        /*Map<String, String> params = new HashMap<String, String>();
         params = fillParams (params);
         if (!params.isEmpty()) {
             queryString.append(" where ");
@@ -293,17 +285,17 @@ public class USGSDataInteractionHibernate {
             firstTime = true;
             queryCountString = completeQueryString(queryCountString, params);
         }
-        String tempString = queryCountString.toString();
+        String tempString = queryCountString.toString();*/
+        ///////////////////////////////////////////////////////////////////////
         int rowCount; //getTableRowCountWithHQL(String whereClause)
-        rowCount = databaseUSGSDB.getTableRowCountWithHQL(tempString);
+        rowCount = databaseUSGSDB.getTableRowCountWithHQL(tempCountQueryString);
         try {
             if (rowCount == 0)
                 usgsView.displayMessage("Nothing to delete Count of records is Zero, returning to Menu!");
             else {
                 usgsView.displayMessageNoLineBreak("There are: " + rowCount + " in your search Query, do you want to DELETE them all Y/n?");
                 if (toUpperCase(getValidMenuCharacterInput("YyNn")) == 'Y') {
-                    databaseUSGSDB.deleteRowsFromUSGSTableData(queryString);
-
+                    databaseUSGSDB.deleteRowsFromUSGSTableData(tempQueryString);
                 } else
                     usgsView.displayMessage("Okay no deletion done, returning to Menu!");
             }
@@ -400,24 +392,9 @@ public class USGSDataInteractionHibernate {
                     usgsView.displayGoingBackToMainMenuScreen();
                     break;
                 case 1:
-                    createDataBase();
-                    break;
-                case 2:
-                    createTable();
-                    break;
-                case 3:
-                    deleteAllRecordsInDataBase();
-                    break;
-                case 4:
-                    deleteTable();
-                    break;
-                case 5:
                     loadDataBase();
                     break;
-                case 6:
-                    queryDataBaseFreeFormForDebugging();
-                    break;
-                case 7:
+                case 2:
                     readCSVFile();
                     break;
             }
@@ -430,40 +407,6 @@ public class USGSDataInteractionHibernate {
         ReadCSVFile readCSVFile = new ReadCSVFile();
         readCSVFile.readCSVFileAndPrint();
     }
-    private void deleteTable() {
-        usgsView.displayMessage("Trying to drop table, please wait!");
-        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
-        if (databaseUSGSDB.deleteTable()) {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
-                    " Table " + USGSDatabaseHibernate.getTableName() +" deleted successfully!");
-        } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
-                    " Table " + USGSDatabaseHibernate.getTableName() + " could not be deleted! Sorry!");
-        }
-    }
-
-    private void createTable() {
-        usgsView.displayMessage("Trying to create Table, please wait!");
-        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
-        if (databaseUSGSDB.createTable()) {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
-                                            " Table " + USGSDatabaseHibernate.getTableName() +" created successfully!");
-        } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() +
-                    " Table " + USGSDatabaseHibernate.getTableName() + " could not be created! Sorry!");
-        }
-
-    }
-
-    private void deleteAllRecordsInDataBase() {
-        usgsView.displayMessage("Trying to drop database, this works only when started new, it take a few minutes,please wait!");
-        if (databaseMasterDB.deleteAllRecordsInDB(USGSDatabaseHibernate.getDbName())) {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " deleted successfully!");
-        } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " could not be deleted! Sorry!");
-        }
-    }
-
     private void loadDataBase() {
         usgsView.displayMessage("Trying to load database from CSV, it take a few minutes, please wait!");
         ReadCSVFile readCSVFile = new ReadCSVFile();
@@ -476,48 +419,6 @@ public class USGSDataInteractionHibernate {
         }
     }
 
-    private void queryDataBaseFreeFormForDebugging() {
-        boolean done = false;
-        databaseUSGSDB = new USGSDatabaseHibernate(connectionStringUSGSDB);
-        while (!done) {
-            usgsView.displayQueryDataBaseMenu();
-            String word = input.nextLine();
-            try {
-                if (word.toLowerCase().matches("end")) {
-                    usgsView.displayMessage("Going back to Main Menu!");
-                    done = true;
-                    break;
-                }
-            } catch (Exception e) {
-                usgsView.displayMessage("Invalid SQL syntax try again: End to exit!");
-            }
-            try {
-                // now word has SQL string to process
-                ResultSet rs = databaseUSGSDB.executeSingleSql(word);
-                usgsView.displayMessage("Result is: " + rs);
-                ResultSetMetaData rsmd = null;
-                rsmd = rs.getMetaData();
-                int columnsNumber = rsmd.getColumnCount();
-                while (rs.next()) {
-                    for (int i = 1; i <= columnsNumber; i++) {
-                        if (i > 1) usgsView.displayMessage(",  ");
-                        String columnValue = rs.getString(i);
-                        usgsView.displayMessage(rsmd.getColumnName(i) + ": " + columnValue);
-                    }
-                    usgsView.displayMessage("");
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    private void createDataBase() {
-        if (!databaseMasterDB.createDB(USGSDatabaseHibernate.getDbName())) {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " exists, going back to main menu");
-        } else {
-            usgsView.displayMessage("DataBase: " + USGSDatabaseHibernate.getDbName() + " Created Successfully!!");
-        }
-    }
     public Integer getValidMenuIntegerInput(Integer maxNumber) {
         boolean done = false;
         while (!done) {
